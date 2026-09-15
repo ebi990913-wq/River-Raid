@@ -5,12 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0b1e0b">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>River Raid Retro</title>
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body {
@@ -18,12 +15,12 @@
     font-family: "Courier New", monospace; color:#e8f5c8;
     touch-action:none; user-select:none; -webkit-user-select:none;
   }
-  #game { display:block; width:100%; height:100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+  #game { display:block; width:100%; height:100%; image-rendering: pixelated; }
   .overlay {
     position:absolute; inset:0; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:12px;
-    background:rgba(5,15,5,0.9); backdrop-filter: blur(3px);
-    padding:16px; text-align:center; z-index:10; overflow-y:auto;
+    align-items:center; justify-content:center; gap:10px;
+    background:rgba(5,15,5,0.92); backdrop-filter: blur(4px);
+    padding:14px; text-align:center; z-index:10; overflow-y:auto;
   }
   .overlay.hidden { display:none; }
   .title {
@@ -33,7 +30,7 @@
   }
   .subtitle { font-size:clamp(11px,3.2vw,14px); color:#9fbf7f; margin-bottom:10px; }
   .btn {
-    min-width:200px; padding:12px 20px; font-size:clamp(13px,3.8vw,16px);
+    min-width:190px; padding:12px 18px; font-size:clamp(13px,3.8vw,16px);
     font-family:inherit; font-weight:bold; letter-spacing:1px;
     background:#1e3d1e; color:#e8f5c8; border:3px solid #4a7a3a;
     border-radius:8px; cursor:pointer; box-shadow: 0 4px 0 #0e1f0e;
@@ -43,10 +40,11 @@
   .btn.primary { background:#3a6b1e; border-color:#7ac04a; color:#f5ffe0; }
   .btn.primary:hover { background:#4a8a26; }
   .btn.small { min-width:auto; padding:8px 14px; font-size:clamp(11px,3.2vw,13px); }
+  .btn.coin { background:#a87800; border-color:#f2d34a; color:#fff; }
   .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
   .opt {
     display:flex; align-items:center; justify-content:space-between;
-    width:min(360px,92vw); padding:8px 12px; background:#12260f;
+    width:min(370px,94vw); padding:8px 12px; background:#12260f;
     border:2px solid #2f4d22; border-radius:8px; font-size:clamp(11px,3.4vw,14px);
     gap:8px;
   }
@@ -58,8 +56,7 @@
     border-radius:6px; cursor:pointer;
   }
   .seg button.active { background:#f2d34a; color:#3a2a00; border-color:#f2d34a; font-weight:bold; }
-  .hint { font-size:clamp(10px,2.8vw,12px); color:#7a9a5f; margin-top:6px; }
-  .big { font-size:clamp(24px,7vw,40px); color:#f2d34a; text-shadow:2px 2px 0 #7a4a00; }
+  .hint { font-size:clamp(10px,2.8vw,12px); color:#7a9a5f; margin-top:4px; }
   .stats { font-size:clamp(12px,3.6vw,15px); color:#c8e0a8; line-height:1.7; }
   .stats b { color:#f2d34a; }
   #hud {
@@ -109,14 +106,57 @@
   #btnUp    { left:calc(max(12px, env(safe-area-inset-left, 12px)) + clamp(32px,10vw,44px)); bottom:calc(max(16px, env(safe-area-inset-bottom, 16px)) + clamp(64px,20vw,88px)); }
   #btnFire  { right:max(12px, env(safe-area-inset-right, 12px)); }
   #btnDown  { right:calc(max(12px, env(safe-area-inset-right, 12px)) + clamp(32px,10vw,44px)); bottom:calc(max(16px, env(safe-area-inset-bottom, 16px)) + clamp(64px,20vw,88px)); }
-  .qrbox { background:#fff; padding:10px; border-radius:8px; }
-  .codeBox { font-family:monospace; font-size:clamp(20px,7vw,32px); letter-spacing:6px; color:#f2d34a; background:#1a1a1a; padding:10px 16px; border-radius:8px; border:2px solid #4a7a3a; }
-  .loader { display:inline-block; width:16px; height:16px; border:3px solid #4a7a3a; border-top-color:#f2d34a; border-radius:50%; animation:spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .scroll { max-height:85vh; overflow-y:auto; width:100%; display:flex; flex-direction:column; align-items:center; gap:10px; padding:10px; }
-  .chatBtn { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:6; pointer-events:auto; }
-  .chatBtn button { background:#1e3d1ecc; border:2px solid #4a7a3a; color:#e8f5c8; font-size:18px; width:36px; height:36px; border-radius:50%; }
-  .chatBtn.hidden { display:none; }
+  .coinBadge {
+    display:inline-flex; align-items:center; gap:4px; background:#3a2a00;
+    border:2px solid #f2d34a; border-radius:20px; padding:4px 12px;
+    color:#f2d34a; font-weight:bold; font-size:clamp(12px,3.5vw,15px);
+  }
+  .scroll { max-height:85vh; overflow-y:auto; width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding:8px; }
+  .themeCard {
+    display:flex; align-items:center; justify-content:space-between;
+    width:min(360px,94vw); padding:10px 12px; background:#12260f;
+    border:2px solid #2f4d22; border-radius:8px; gap:8px;
+  }
+  .themePreview {
+    width:50px; height:34px; border-radius:6px; border:2px solid #000;
+    display:flex; overflow:hidden; flex-shrink:0;
+  }
+  .themePreview > div { flex:1; }
+  .achv {
+    display:flex; align-items:center; gap:10px;
+    width:min(370px,94vw); padding:8px 12px; background:#12260f;
+    border:2px solid #2f4d22; border-radius:8px; text-align:right;
+    font-size:clamp(11px,3.3vw,13px);
+  }
+  .achv.locked { opacity:0.45; }
+  .achv .icon { font-size:22px; }
+  .achv .info { flex:1; }
+  .achv .name { color:#f2d34a; font-weight:bold; }
+  .achv .desc { color:#9fbf7f; font-size:10px; }
+  .walletInput {
+    font-size:14px; padding:10px; text-align:center;
+    width:min(340px,92vw); background:#1a1a1a; color:#f2d34a;
+    border:2px solid #4a7a3a; border-radius:8px; font-family:monospace;
+    direction:ltr;
+  }
+  .tabs { display:flex; gap:4px; flex-wrap:wrap; justify-content:center; margin-bottom:6px; }
+  .tabs button {
+    padding:8px 12px; font-family:inherit; font-size:clamp(11px,3.2vw,13px);
+    background:#1e3d1e; color:#a8c088; border:2px solid #2f4d22;
+    border-radius:8px; cursor:pointer;
+  }
+  .tabs button.active { background:#f2d34a; color:#3a2a00; border-color:#f2d34a; font-weight:bold; }
+  #comboDisplay {
+    position:absolute; top:60px; right:12px; font-size:clamp(14px,4vw,20px);
+    color:#f2d34a; text-shadow:2px 2px 0 #7a4a00; pointer-events:none;
+    opacity:0; transition:opacity .3s; z-index:5;
+  }
+  #comboDisplay.show { opacity:1; }
+  .floatScore {
+    position:absolute; color:#fff2a0; font-weight:bold; pointer-events:none;
+    text-shadow:1px 1px 0 #7a4a00; z-index:8;
+  }
+  .hidden { display:none !important; }
 </style>
 </head>
 <body>
@@ -126,18 +166,19 @@
 <div id="hud" class="hidden">
   <div class="col">
     <div>امتیاز: <span id="score">0</span></div>
-    <div>مرحله: <span id="level">1</span></div>
-    <div>❤️ <span id="lives1">3</span> <span style="color:#4ac8f2;">●</span></div>
+    <div>مرحله: <span id="level">1</span> · روز <span id="day">1</span></div>
+    <div>❤️ <span id="lives">3</span></div>
   </div>
   <div class="col right">
     <div>سوخت</div>
     <div id="fuelBar"><div id="fuelFill"></div></div>
-    <div>پیشرفت مرحله</div>
+    <div>پیشرفت</div>
     <div id="progressBar"><div id="progressFill"></div></div>
   </div>
 </div>
 <button id="pauseBtn" class="hidden">⏸</button>
 <div id="toast"></div>
+<div id="comboDisplay"></div>
 
 <div id="touchControls" class="hidden">
   <div class="tcbtn" id="btnLeft">◀</div>
@@ -147,109 +188,127 @@
   <div class="tcbtn" id="btnFire">🔥</div>
 </div>
 
-<div class="chatBtn hidden" id="chatBox">
-  <button data-e="😂">😂</button>
-  <button data-e="🔥">🔥</button>
-  <button data-e="👏">👏</button>
-  <button data-e="💪">💪</button>
-</div>
-
 <!-- MAIN MENU -->
 <div id="menu" class="overlay">
   <div class="title">RIVER RAID</div>
-  <div class="subtitle">— نسخه‌ی رترو کامل —</div>
+  <div class="subtitle">— نسخه‌ی کامل —</div>
+
+  <div class="coinBadge">🪙 <span id="menuCoins">0</span></div>
 
   <div class="scroll">
-    <div class="opt">
-      <label>حالت بازی</label>
-      <div class="seg" id="segMode">
-        <button data-v="single" class="active">تک‌نفره</button>
-        <button data-v="infinite">بی‌نهایت</button>
-        <button data-v="lan">دو‌نفره LAN</button>
-      </div>
+    <div class="tabs">
+      <button data-tab="play" class="active">🎮 بازی</button>
+      <button data-tab="shop">🛒 فروشگاه</button>
+      <button data-tab="achv">🏆 دستاوردها</button>
+      <button data-tab="wallet">💼 کیف پول</button>
+      <button data-tab="settings">⚙ تنظیمات</button>
     </div>
-    <div class="opt">
-      <label>کنترل</label>
-      <div class="seg" id="segControl">
-        <button data-v="buttons" class="active">دکمه</button>
-        <button data-v="drag">کشیدن</button>
-        <button data-v="tilt">تیلت</button>
+
+    <!-- Play Tab -->
+    <div id="tab-play" class="tabContent">
+      <div class="opt">
+        <label>حالت بازی</label>
+        <div class="seg" id="segMode">
+          <button data-v="single" class="active">مرحله‌ای</button>
+          <button data-v="infinite">بی‌نهایت</button>
+        </div>
       </div>
+      <div class="opt">
+        <label>تم</label>
+        <div class="seg" id="segTheme">
+          <button data-v="atari" class="active">آتاری</button>
+          <button data-v="retro">رترو</button>
+          <button data-v="neon">نئون</button>
+          <button data-v="sunset">غروب</button>
+          <button data-v="polar">قطبی</button>
+        </div>
+      </div>
+      <button class="btn primary" id="startBtn">▶ شروع بازی</button>
+      <div class="hint">بهترین امتیاز: <b id="bestMenu">0</b></div>
+      <div class="hint" id="leaderboard" style="line-height:1.6;"></div>
     </div>
-    <div class="opt">
-      <label>شلیک</label>
-      <div class="seg" id="segFire">
-        <button data-v="auto">خودکار</button>
-        <button data-v="manual" class="active">دستی</button>
-      </div>
+
+    <!-- Shop Tab -->
+    <div id="tab-shop" class="tabContent hidden">
+      <div class="hint">سکه‌ی شما: <b id="shopCoins">0</b> 🪙</div>
+      <div id="shopItems"></div>
     </div>
-    <div class="opt">
-      <label>سختی</label>
-      <div class="seg" id="segDiff">
-        <button data-v="easy">آسون</button>
-        <button data-v="normal" class="active">متوسط</button>
-        <button data-v="hard">سخت</button>
-      </div>
+
+    <!-- Achievements Tab -->
+    <div id="tab-achv" class="tabContent hidden">
+      <div class="hint">دستاوردها: <b id="achvCount">0</b> از ۲۰</div>
+      <div id="achvList"></div>
     </div>
-    <div class="opt">
-      <label>صدا</label>
-      <div class="seg" id="segSound">
-        <button data-v="on" class="active">روشن</button>
-        <button data-v="off">خاموش</button>
-      </div>
+
+    <!-- Wallet Tab -->
+    <div id="tab-wallet" class="tabContent hidden">
+      <div class="hint">موجودی سکه شما:</div>
+      <div class="coinBadge" style="font-size:20px; padding:10px 20px;">🪙 <span id="walletCoins">0</span></div>
+      <div class="hint" style="margin-top:12px;">آدرس کیف پول خود را وارد کنید تا بعداً پاداش دریافت کنید:</div>
+      <input class="walletInput" id="walletAddr" placeholder="آدرس کیف پول..." />
+      <button class="btn small" id="saveWalletBtn">💾 ذخیره</button>
+      <div class="hint">تاریخچه‌ی سکه‌ها:</div>
+      <div class="hint" id="coinHistory" style="line-height:1.7; max-height:150px; overflow-y:auto;"></div>
     </div>
-    <div class="opt">
-      <label>حالت LAN</label>
-      <div class="seg" id="segLanMode">
-        <button data-v="coop" class="active">همزمان</button>
-        <button data-v="turn">نوبتی</button>
+
+    <!-- Settings Tab -->
+    <div id="tab-settings" class="tabContent hidden">
+      <div class="opt">
+        <label>کنترل</label>
+        <div class="seg" id="segControl">
+          <button data-v="buttons" class="active">دکمه</button>
+          <button data-v="drag">کشیدن</button>
+          <button data-v="tilt">تیلت</button>
+        </div>
       </div>
+      <div class="opt">
+        <label>شلیک</label>
+        <div class="seg" id="segFire">
+          <button data-v="auto">خودکار</button>
+          <button data-v="manual" class="active">دستی</button>
+        </div>
+      </div>
+      <div class="opt">
+        <label>سختی</label>
+        <div class="seg" id="segDiff">
+          <button data-v="easy">آسون</button>
+          <button data-v="normal" class="active">متوسط</button>
+          <button data-v="hard">سخت</button>
+        </div>
+      </div>
+      <div class="opt">
+        <label>صدا</label>
+        <div class="seg" id="segSound">
+          <button data-v="on" class="active">روشن</button>
+          <button data-v="off">خاموش</button>
+        </div>
+      </div>
+      <div class="opt">
+        <label>موسیقی پس‌زمینه</label>
+        <div class="seg" id="segMusic">
+          <button data-v="on">روشن</button>
+          <button data-v="off" class="active">خاموش</button>
+        </div>
+      </div>
+      <button class="btn small" id="resetBtn" style="background:#5a1e1e; border-color:#8a3a3a;">🗑 پاک‌کردن همه‌ی داده‌ها</button>
     </div>
   </div>
-
-  <button class="btn primary" id="startBtn">▶ شروع بازی</button>
-  <button class="btn" id="lanBtn">📡 بازی دو‌نفره LAN</button>
-  <div class="hint">بهترین امتیاز: <b id="bestMenu">0</b></div>
-  <div class="hint">رکوردهای برتر:</div>
-  <div class="hint" id="leaderboard" style="line-height:1.6;"></div>
 </div>
 
-<!-- LAN MENU -->
-<div id="lanMenu" class="overlay hidden">
-  <div class="title" style="font-size:clamp(18px,5vw,28px);">بازی دو‌نفره LAN</div>
-  <div class="row">
-    <button class="btn primary" id="hostBtn">📡 میزبان شو</button>
-    <button class="btn" id="joinBtn">🔗 وصل شو</button>
-  </div>
-  <button class="btn small" id="lanBackBtn">🏠 بازگشت</button>
+<!-- DAILY REWARD -->
+<div id="daily" class="overlay hidden">
+  <div class="title" style="font-size:clamp(18px,5vw,26px);">🎁 جایزه‌ی روزانه</div>
+  <div class="hint">روز <b id="dailyDay">1</b> پیاپی</div>
+  <div class="coinBadge" style="font-size:24px; padding:14px 24px;">+<span id="dailyAmount">50</span> 🪙</div>
+  <button class="btn primary" id="claimBtn">دریافت جایزه</button>
 </div>
 
-<!-- HOST LOBBY -->
-<div id="hostLobby" class="overlay hidden">
-  <div class="title" style="font-size:clamp(16px,4.5vw,24px);">میزبان - در انتظار حریف</div>
-  <div class="hint">با دوربین گوشی حریف این QR رو اسکن کنه:</div>
-  <div class="qrbox" id="qrHolder"></div>
-  <div class="hint">یا این کد رو تایپ کنه:</div>
-  <div class="codeBox" id="hostCode">------</div>
-  <div class="hint" id="hostStatus">در حال آماده‌سازی...</div>
-  <button class="btn small" id="hostCancelBtn">لغو</button>
-</div>
-
-<!-- JOIN -->
-<div id="joinMenu" class="overlay hidden">
-  <div class="title" style="font-size:clamp(16px,4.5vw,24px);">اتصال به میزبان</div>
-  <div class="hint">کد ۶ رقمی رو وارد کن:</div>
-  <input id="joinCode" maxlength="6" inputmode="numeric" style="font-size:24px; letter-spacing:6px; padding:10px; text-align:center; width:200px; background:#1a1a1a; color:#f2d34a; border:2px solid #4a7a3a; border-radius:8px; font-family:monospace;" />
-  <button class="btn primary" id="joinGoBtn">اتصال</button>
-  <div class="hint" id="joinStatus">آماده</div>
-  <button class="btn small" id="joinBackBtn">بازگشت</button>
-</div>
-
-<!-- OVER -->
+<!-- GAME OVER -->
 <div id="over" class="overlay hidden">
   <div class="title" style="color:#ff5a5a; text-shadow:3px 3px 0 #5a0000;">GAME OVER</div>
   <div class="stats">
     امتیاز: <b id="finalScore">0</b><br>
+    سکه‌های این دور: <b id="finalCoins">0</b> 🪙<br>
     مرحله: <b id="finalLevel">1</b><br>
     بهترین: <b id="finalBest">0</b>
   </div>
@@ -257,14 +316,6 @@
     <button class="btn primary" id="retryBtn">🔄 دوباره</button>
     <button class="btn" id="menuBtn">🏠 منو</button>
   </div>
-</div>
-
-<!-- SHOP -->
-<div id="shop" class="overlay hidden">
-  <div class="title" style="font-size:clamp(16px,4.5vw,24px);">🛒 فروشگاه ارتقاء</div>
-  <div class="stats">امتیاز فعلی: <b id="shopScore">0</b></div>
-  <div id="shopItems" style="display:flex; flex-direction:column; gap:6px; width:min(380px,95vw);"></div>
-  <button class="btn primary" id="shopDoneBtn">ادامه ▶</button>
 </div>
 
 <!-- PAUSE -->
@@ -276,11 +327,15 @@
   </div>
 </div>
 
-<!-- WAITING FOR RECONNECT -->
-<div id="reconnect" class="overlay hidden">
-  <div class="title" style="font-size:clamp(16px,4.5vw,24px);">در انتظار اتصال مجدد</div>
-  <div class="loader"></div>
-  <div class="hint" id="reconnectStatus">تا ۳۰ ثانیه صبر می‌کنیم...</div>
+<!-- SHOP POPUP (بین مراحل) -->
+<div id="midShop" class="overlay hidden">
+  <div class="title" style="font-size:clamp(16px,4.5vw,22px);">مرحله تموم شد!</div>
+  <div class="stats">امتیاز: <b id="midScore">0</b> · سکه: <b id="midCoins">0</b> 🪙</div>
+  <div class="hint">می‌خوای چیزی بخری؟</div>
+  <div class="row">
+    <button class="btn primary" id="midContinue">ادامه ▶</button>
+    <button class="btn" id="midOpenShop">🛒 فروشگاه</button>
+  </div>
 </div>
 
 <script>
@@ -292,50 +347,102 @@
 ============================================================ */
 const LOGICAL_H = 1000;
 const CFG = {
-  jet: { w: 48, h: 58, speed: 460, vySpeed: 320 },
+  jet: { w: 52, h: 62, speed: 480, vySpeed: 340 },
   bullet: { speed: 950, cooldown: 200 },
   fuel: { max: 100, drainPerSec: 3.2, tank: 30 },
-  scrollBase: 160,
-  colors: {
-    water: "#1b6ea8", waterDark: "#155a8a", waterNight: "#0a2a4a", waterNightDark: "#061a30",
-    land: "#5a8f3a", landDark: "#3f6b26", landNight: "#2a4a1a", landNightDark: "#1a3010",
-    sand: "#d8b968", sandDark: "#b89848",
-    road: "#9a9a9a",
-    jet: "#e8e8e8", jetDark: "#9a9a9a", jetAccent: "#f24a4a", cockpit: "#4ac8f2",
-    jet2: "#f2a0a0", jet2Dark: "#a05a5a", jet2Accent: "#4ac8f2", cockpit2: "#f2d34a",
-    heli: "#4a8a3a", heliDark: "#2f5c26",
-    ship: "#c85a3a", shipDark: "#8a3a1e",
-    tank: "#d8d84a", tankDark: "#8a8a1e",
-    tankBody: "#f2a020", tankBodyDark: "#a05000", tankHose: "#333", tankSign: "#fff2a0",
-    balloon: "#f24a8a", balloonDark: "#a82a5a",
-    bullet: "#fff8a0", enemyBullet: "#ff5a5a",
-    explosion: ["#fff2a0","#ffb040","#ff5a20","#8a2a0a"],
-    star: "#f2d34a"
-  }
+  scrollBase: 160
 };
 
 /* ============================================================
-   CANVAS
+   THEMES
 ============================================================ */
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d", { alpha:false });
-let CW = 0, CH = 0, scale = 1, LOGICAL_W = 600;
-
-function resize() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  CW = window.innerWidth;
-  CH = window.innerHeight;
-  canvas.width = Math.floor(CW * dpr);
-  canvas.height = Math.floor(CH * dpr);
-  canvas.style.width = CW + "px";
-  canvas.style.height = CH + "px";
-  scale = CH / LOGICAL_H;
-  LOGICAL_W = CW / scale;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.imageSmoothingEnabled = false;
-}
-window.addEventListener("resize", resize);
-window.addEventListener("orientationchange", () => setTimeout(resize, 200));
+const THEMES = {
+  atari: {
+    name: "آتاری کلاسیک",
+    price: 0,
+    colors: {
+      water:"#2020a0", waterDark:"#3030c0",
+      land:"#208020", landDark:"#106010",
+      sand:"#e0e020",
+      road:"#a0a0a0",
+      jet:"#f0f0f0", jetDark:"#a0a0a0", jetAccent:"#e02020", cockpit:"#40d0f0",
+      heli:"#40a040", heliDark:"#206020",
+      ship:"#d06030", shipDark:"#803010",
+      tankBody:"#f0a020", tankBodyDark:"#a06000", tankDark:"#a0a020", tankSign:"#f0f0a0",
+      balloon:"#f04080", balloonDark:"#a02050",
+      bullet:"#f0f080", enemyBullet:"#f04040",
+      explosion:["#f0f0a0","#f0a040","#f04020","#802010"]
+    }
+  },
+  retro: {
+    name: "رترو مدرن",
+    price: 0,
+    colors: {
+      water:"#1b6ea8", waterDark:"#155a8a",
+      land:"#5a8f3a", landDark:"#3f6b26",
+      sand:"#d8b968",
+      road:"#9a9a9a",
+      jet:"#e8e8e8", jetDark:"#9a9a9a", jetAccent:"#f24a4a", cockpit:"#4ac8f2",
+      heli:"#4a8a3a", heliDark:"#2f5c26",
+      ship:"#c85a3a", shipDark:"#8a3a1e",
+      tankBody:"#f2a020", tankBodyDark:"#a05000", tankDark:"#8a8a1e", tankSign:"#fff2a0",
+      balloon:"#f24a8a", balloonDark:"#a82a5a",
+      bullet:"#fff8a0", enemyBullet:"#ff5a5a",
+      explosion:["#fff2a0","#ffb040","#ff5a20","#8a2a0a"]
+    }
+  },
+  neon: {
+    name: "نئون",
+    price: 150,
+    colors: {
+      water:"#0a0a2a", waterDark:"#1515 4a".replace(" ",""),
+      land:"#0a2a1a", landDark:"#051a10",
+      sand:"#40ff80",
+      road:"#40ff80",
+      jet:"#00ffff", jetDark:"#0088aa", jetAccent:"#ff00ff", cockpit:"#ffff00",
+      heli:"#00ff88", heliDark:"#008844",
+      ship:"#ff0088", shipDark:"#aa0055",
+      tankBody:"#ffff00", tankBodyDark:"#aa8800", tankDark:"#888800", tankSign:"#ffffff",
+      balloon:"#ff00ff", balloonDark:"#aa00aa",
+      bullet:"#00ffff", enemyBullet:"#ff0088",
+      explosion:["#ffffff","#00ffff","#ff00ff","#aa00aa"]
+    }
+  },
+  sunset: {
+    name: "غروب",
+    price: 200,
+    colors: {
+      water:"#4a1a5a", waterDark:"#6a2a7a",
+      land:"#8a3a2a", landDark:"#5a2010",
+      sand:"#ffb040",
+      road:"#a06030",
+      jet:"#ffe0a0", jetDark:"#a07040", jetAccent:"#ff4060", cockpit:"#40ffff",
+      heli:"#a05020", heliDark:"#602010",
+      ship:"#c04030", shipDark:"#601810",
+      tankBody:"#ffa040", tankBodyDark:"#a04010", tankDark:"#aa7030", tankSign:"#fff0c0",
+      balloon:"#ff60a0", balloonDark:"#a03060",
+      bullet:"#fff0a0", enemyBullet:"#ff4040",
+      explosion:["#ffffa0","#ffa040","#ff4040","#601010"]
+    }
+  },
+  polar: {
+    name: "قطبی",
+    price: 250,
+    colors: {
+      water:"#0a3050", waterDark:"#0a4060",
+      land:"#a0d0e0", landDark:"#70a0b0",
+      sand:"#ffffff",
+      road:"#a0d0e0",
+      jet:"#ffffff", jetDark:"#a0c0d0", jetAccent:"#40ffa0", cockpit:"#a0ffff",
+      heli:"#40d0a0", heliDark:"#209070",
+      ship:"#40a0d0", shipDark:"#206080",
+      tankBody:"#ffffff", tankBodyDark:"#a0a0a0", tankDark:"#70d0a0", tankSign:"#40ffa0",
+      balloon:"#a0e0ff", balloonDark:"#60a0c0",
+      bullet:"#40ffa0", enemyBullet:"#ff4060",
+      explosion:["#ffffff","#a0ffff","#40ffa0","#209070"]
+    }
+  }
+};
 
 /* ============================================================
    STORAGE
@@ -344,39 +451,173 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem("rr2_" + k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
   set(k, v) { try { localStorage.setItem("rr2_" + k, JSON.stringify(v)); } catch(e){} }
 };
-const settings = {
-  mode: store.get("mode", "single"),
-  control: store.get("control", "buttons"),
-  fire: store.get("fire", "manual"),
-  difficulty: store.get("difficulty", "normal"),
-  sound: store.get("sound", "on"),
-  lanMode: store.get("lanMode", "coop")
+
+// بارگذاری داده‌های قبلی (از نسخه‌ی قدیمی)
+function migrateOldData() {
+  try {
+    const oldBest = localStorage.getItem("rr_best");
+    if (oldBest && !localStorage.getItem("rr2_best")) {
+      localStorage.setItem("rr2_best", oldBest);
+    }
+    const oldLB = localStorage.getItem("rr_leaderboard");
+    if (oldLB && !localStorage.getItem("rr2_leaderboard")) {
+      localStorage.setItem("rr2_leaderboard", oldLB);
+    }
+  } catch(e){}
+}
+migrateOldData();
+
+let player = {
+  coins: store.get("coins", 0),
+  best: store.get("best", 0),
+  leaderboard: store.get("leaderboard", []),
+  unlockedThemes: store.get("unlockedThemes", ["atari","retro"]),
+  unlockedSkins: store.get("unlockedSkins", ["default"]),
+  currentSkin: store.get("currentSkin", "default"),
+  achievements: store.get("achievements", {}),
+  daily: store.get("daily", { lastClaim: 0, streak: 0 }),
+  wallet: store.get("wallet", ""),
+  upgrades: store.get("upgrades", { fuelTank:0, speed:0, shieldStart:0, extraLife:0 }),
+  coinHistory: store.get("coinHistory", []),
+  totalKills: store.get("totalKills", 0),
+  totalBossKills: store.get("totalBossKills", 0),
+  totalGames: store.get("totalGames", 0),
+  stats: store.get("stats", { maxCombo:0, noHitStages:0, maxScore:0 })
 };
-let bestScore = store.get("best", 0);
-let leaderboard = store.get("leaderboard", []);
+
+function savePlayer() {
+  store.set("coins", player.coins);
+  store.set("best", player.best);
+  store.set("leaderboard", player.leaderboard);
+  store.set("unlockedThemes", player.unlockedThemes);
+  store.set("unlockedSkins", player.unlockedSkins);
+  store.set("currentSkin", player.currentSkin);
+  store.set("achievements", player.achievements);
+  store.set("daily", player.daily);
+  store.set("wallet", player.wallet);
+  store.set("upgrades", player.upgrades);
+  store.set("coinHistory", player.coinHistory);
+  store.set("totalKills", player.totalKills);
+  store.set("totalBossKills", player.totalBossKills);
+  store.set("totalGames", player.totalGames);
+  store.set("stats", player.stats);
+}
+
+function addCoins(n, reason) {
+  player.coins += n;
+  player.coinHistory.unshift({ n, reason, t: Date.now() });
+  if (player.coinHistory.length > 30) player.coinHistory.length = 30;
+  savePlayer();
+  updateCoinDisplays();
+}
+
+function updateCoinDisplays() {
+  const ids = ["menuCoins","shopCoins","walletCoins"];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = player.coins; });
+}
+
+/* ============================================================
+   ACHIEVEMENTS
+============================================================ */
+const ACHV = [
+  { id:"first_kill", icon:"🎯", name:"اولین شلیک", desc:"اولین دشمن رو بزن" },
+  { id:"kills_50", icon:"💥", name:"تیرانداز", desc:"۵۰ دشمن بزن" },
+  { id:"kills_200", icon:"🔥", name:"سلطان آسمون", desc:"۲۰۰ دشمن بزن" },
+  { id:"kills_1000", icon:"👑", name:"افسانه", desc:"۱۰۰۰ دشمن بزن" },
+  { id:"score_1000", icon:"⭐", name:"هزارتایی", desc:"۱۰۰۰ امتیاز بگیر" },
+  { id:"score_5000", icon:"🌟", name:"پنج هزار", desc:"۵۰۰۰ امتیاز بگیر" },
+  { id:"score_10000", icon:"💫", name:"ده هزار", desc:"۱۰۰۰۰ امتیاز بگیر" },
+  { id:"level_5", icon:"🎖", name:"مرحله ۵", desc:"به مرحله ۵ برس" },
+  { id:"level_10", icon:"🏅", name:"مرحله ۱۰", desc:"به مرحله ۱۰ برس" },
+  { id:"level_20", icon:"🥇", name:"مرحله ۲۰", desc:"به مرحله ۲۰ برس" },
+  { id:"boss_1", icon:"👹", name:"باس‌کش", desc:"اولین باس رو بزن" },
+  { id:"boss_5", icon:"🐲", name:"شکارچی باس", desc:"۵ باس بزن" },
+  { id:"coins_100", icon:"🪙", name:"ثروتمند", desc:"۱۰۰ سکه جمع کن" },
+  { id:"coins_1000", icon:"💰", name:"میلیونر", desc:"۱۰۰۰ سکه جمع کن" },
+  { id:"combo_10", icon:"⚡", name:"کمبو ۱۰", desc:"کمبو ۱۰x بگیر" },
+  { id:"combo_20", icon:"🌪", name:"کمبو ۲۰", desc:"کمبو ۲۰x بگیر" },
+  { id:"no_hit_stage", icon:"🛡", name:"شکست‌ناپذیر", desc:"یه مرحله رو بدون آسیب تموم کن" },
+  { id:"games_10", icon:"🎮", name:"بازیکن حرفه‌ای", desc:"۱۰ بار بازی کن" },
+  { id:"daily_7", icon:"📅", name:"وفادار", desc:"۷ روز پیاپی جایزه بگیر" },
+  { id:"wallet_set", icon:"💼", name:"کیف پول", desc:"آدرس کیف پول رو ثبت کن" }
+];
+
+function unlockAchievement(id) {
+  if (player.achievements[id]) return;
+  player.achievements[id] = Date.now();
+  const a = ACHV.find(x => x.id === id);
+  if (a) { toast("🏆 " + a.name, 2); sfx("level"); }
+  savePlayer();
+  renderAchievements();
+}
+
+function checkAchievements() {
+  const c = player.achievements;
+  if (player.totalKills >= 1 && !c.first_kill) unlockAchievement("first_kill");
+  if (player.totalKills >= 50 && !c.kills_50) unlockAchievement("kills_50");
+  if (player.totalKills >= 200 && !c.kills_200) unlockAchievement("kills_200");
+  if (player.totalKills >= 1000 && !c.kills_1000) unlockAchievement("kills_1000");
+  if (player.best >= 1000 && !c.score_1000) unlockAchievement("score_1000");
+  if (player.best >= 5000 && !c.score_5000) unlockAchievement("score_5000");
+  if (player.best >= 10000 && !c.score_10000) unlockAchievement("score_10000");
+  if (player.totalBossKills >= 1 && !c.boss_1) unlockAchievement("boss_1");
+  if (player.totalBossKills >= 5 && !c.boss_5) unlockAchievement("boss_5");
+  if (player.coins >= 100 && !c.coins_100) unlockAchievement("coins_100");
+  if (player.coins >= 1000 && !c.coins_1000) unlockAchievement("coins_1000");
+  if (player.stats.maxCombo >= 10 && !c.combo_10) unlockAchievement("combo_10");
+  if (player.stats.maxCombo >= 20 && !c.combo_20) unlockAchievement("combo_20");
+  if (player.stats.noHitStages >= 1 && !c.no_hit_stage) unlockAchievement("no_hit_stage");
+  if (player.totalGames >= 10 && !c.games_10) unlockAchievement("games_10");
+  if (player.daily.streak >= 7 && !c.daily_7) unlockAchievement("daily_7");
+  if (player.wallet && !c.wallet_set) unlockAchievement("wallet_set");
+}
 
 /* ============================================================
    AUDIO
 ============================================================ */
 let audioCtx = null;
 let engineOsc = null, engineGain = null;
+let musicOsc = null, musicGain = null, musicTimer = null;
+
 function initAudio() {
   if (audioCtx) return;
   try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ audioCtx = null; }
 }
 function startEngine() {
-  if (settings.sound !== "on" || !audioCtx || engineOsc) return;
+  if (!audioCtx || engineOsc) return;
   engineOsc = audioCtx.createOscillator();
   engineGain = audioCtx.createGain();
   engineOsc.type = "sawtooth";
   engineOsc.frequency.value = 90;
-  engineGain.gain.value = 0.02;
+  engineGain.gain.value = 0.015;
   engineOsc.connect(engineGain).connect(audioCtx.destination);
   engineOsc.start();
 }
 function stopEngine() {
   if (engineOsc) { try { engineOsc.stop(); } catch(e){} engineOsc = null; engineGain = null; }
 }
+function startMusic() {
+  if (!audioCtx || musicOsc) return;
+  // آهنگ ساده رترو
+  const notes = [262, 330, 392, 523, 392, 330, 294, 262];
+  let i = 0;
+  musicTimer = setInterval(() => {
+    if (!audioCtx || settings.music !== "on") return;
+    const t = audioCtx.currentTime;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = "square";
+    o.frequency.value = notes[i % notes.length];
+    g.gain.setValueAtTime(0.02, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t); o.stop(t + 0.28);
+    i++;
+  }, 300);
+}
+function stopMusic() {
+  if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+}
+
 function sfx(type) {
   if (settings.sound !== "on" || !audioCtx) return;
   const t = audioCtx.currentTime;
@@ -419,24 +660,66 @@ function sfx(type) {
       o.connect(g).connect(audioCtx.destination);
       o.start(st); o.stop(st + 0.13);
     });
-  } else if (type === "chat") {
-    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-    o.type = "sine"; o.frequency.value = 1200;
-    g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-    o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t + 0.11);
+  } else if (type === "coin") {
+    [880, 1320].forEach((f,i) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      const st = t + i*0.05;
+      g.gain.setValueAtTime(0.08, st);
+      g.gain.exponentialRampToValueAtTime(0.001, st + 0.12);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(st); o.stop(st + 0.13);
+    });
   }
 }
+
+/* ============================================================
+   CANVAS
+============================================================ */
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d", { alpha:false });
+let CW = 0, CH = 0, scale = 1, LOGICAL_W = 600;
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  CW = window.innerWidth;
+  CH = window.innerHeight;
+  canvas.width = Math.floor(CW * dpr);
+  canvas.height = Math.floor(CH * dpr);
+  canvas.style.width = CW + "px";
+  canvas.style.height = CH + "px";
+  scale = CH / LOGICAL_H;
+  LOGICAL_W = CW / scale;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+}
+window.addEventListener("resize", resize);
+window.addEventListener("orientationchange", () => setTimeout(resize, 200));
+
+/* ============================================================
+   SETTINGS
+============================================================ */
+const settings = {
+  mode: store.get("mode", "single"),
+  theme: store.get("theme", "atari"),
+  control: store.get("control", "buttons"),
+  fire: store.get("fire", "manual"),
+  difficulty: store.get("difficulty", "normal"),
+  sound: store.get("sound", "on"),
+  music: store.get("music", "off")
+};
+
+function T() { return THEMES[settings.theme] || THEMES.atari; }
 
 /* ============================================================
    INPUT
 ============================================================ */
 const input = { left:false, right:false, up:false, down:false, fire:false, pointerX:null, pointerY:null };
-const input2 = { left:false, right:false, up:false, down:false, fire:false }; // بازیکن دوم محلی (اختیاری)
 
 window.addEventListener("keydown", e => {
   if (e.key === "ArrowLeft" || e.key === "a") input.left = true;
   if (e.key === "ArrowRight"|| e.key === "d") input.right = true;
-  if (e.key === "ArrowUp"   || e.key === "w") { input.up = true; input.fire = true; }
+  if (e.key === "ArrowUp"   || e.key === "w") { input.up = true; }
   if (e.key === "ArrowDown" || e.key === "s") input.down = true;
   if (e.key === " ") input.fire = true;
   if (e.key === "Escape" || e.key === "p") togglePause();
@@ -444,7 +727,7 @@ window.addEventListener("keydown", e => {
 window.addEventListener("keyup", e => {
   if (e.key === "ArrowLeft" || e.key === "a") input.left = false;
   if (e.key === "ArrowRight"|| e.key === "d") input.right = false;
-  if (e.key === "ArrowUp"   || e.key === "w") { input.up = false; input.fire = false; }
+  if (e.key === "ArrowUp"   || e.key === "w") input.up = false;
   if (e.key === "ArrowDown" || e.key === "s") input.down = false;
   if (e.key === " ") input.fire = false;
 });
@@ -484,7 +767,6 @@ canvas.addEventListener("touchend", e => {
   input.pointerX = null; input.pointerY = null; input.fire = false;
 }, { passive:false });
 
-// Tilt
 let tiltX = 0;
 window.addEventListener("deviceorientation", e => {
   if (settings.control !== "tilt") return;
@@ -498,33 +780,30 @@ window.addEventListener("deviceorientation", e => {
 ============================================================ */
 const game = {
   running:false, paused:false, over:false,
-  score:0, level:1, lives:3, lives2:3,
-  fuel:CFG.fuel.max, fuel2:CFG.fuel.max,
+  score:0, level:1, day:1, lives:3,
+  fuel:CFG.fuel.max,
   scrollY:0, shake:0, night:false,
   shield:0, doubleShot:0, freeze:0, magnet:0, triple:0,
-  upgradeSpeed:0, upgradeBombs:0,
   spawnTimer:0, tankTimer:0, bridgeTimer:0, starTimer:0,
-  isBoss:false, boss:null, bossKilled:0,
-  player:null, player2:null,
-  activePlayer:1, // توی نوبتی
-  bullets:[], enemies:[], particles:[], powerups:[], tanks:[], bridges:[], islands:[], stars:[],
+  isBoss:false, boss:null,
+  player:null,
+  bullets:[], enemies:[], particles:[], powerups:[], tanks:[], bridges:[], islands:[], stars:[], floaters:[],
   mode:"single",
-  netMode:null, // 'host' یا 'client' یا null
-  remoteInput:null, // ورودی بازیکن دوم از شبکه
-  stars_collected:0,
-  bombs:0
+  combo:0, comboTimer:0, maxCombo:0,
+  coinsEarned:0, killsThisStage:0, hitsThisStage:0,
+  starsCollected:0
 };
 
-function createPlayer(color) {
+function createPlayer() {
   return {
-    x: LOGICAL_W/2, y: LOGICAL_H - 200,
+    x: LOGICAL_W/2, y: LOGICAL_H - 220,
     w: CFG.jet.w, h: CFG.jet.h,
-    cooldown:0, invuln:1.5, color: color || 1
+    cooldown:0, invuln:2.0
   };
 }
 
 /* ============================================================
-   DIFFICULTY & LEVEL
+   DIFFICULTY
 ============================================================ */
 const DIFF = {
   easy: { speed:0.85, spawn:1.25, drain:0.8 },
@@ -598,15 +877,12 @@ function spawnIsland() {
   });
 }
 
-/* ============================================================
-   BOSS
-============================================================ */
 function spawnBoss() {
   game.isBoss = true;
   game.boss = {
     x: LOGICAL_W/2, y: -200, w: 180, h: 120,
     hp: 40 + game.level*4, maxHp: 40 + game.level*4,
-    phase: 1, vy: 60, vx: 80, shootTimer: 1.5, phaseTimer: 0,
+    phase: 1, vy: 60, vx: 80, shootTimer: 1.5,
     entering: true
   };
 }
@@ -622,11 +898,9 @@ function updateBoss(dt) {
   b.x += b.vx * dt;
   if (b.x < b.w/2 + 20) { b.x = b.w/2+20; b.vx *= -1; }
   if (b.x > LOGICAL_W - b.w/2 - 20) { b.x = LOGICAL_W - b.w/2 - 20; b.vx *= -1; }
-  b.phaseTimer += dt;
   const hpPct = b.hp / b.maxHp;
   if (hpPct < 0.6 && b.phase < 2) { b.phase = 2; toast("فاز ۲!", 1); }
   if (hpPct < 0.3 && b.phase < 3) { b.phase = 3; toast("فاز ۳!", 1); }
-
   b.shootTimer -= dt;
   if (b.shootTimer <= 0) {
     if (b.phase === 1) {
@@ -636,10 +910,7 @@ function updateBoss(dt) {
     } else if (b.phase === 2) {
       b.shootTimer = 1.0;
       for (let a = -0.5; a <= 0.5; a += 0.25) {
-        game.bullets.push({
-          x: b.x, y: b.y + b.h/2, w: 5, h: 14,
-          vy: 400, vx: a*300, enemy:true
-        });
+        game.bullets.push({ x: b.x, y: b.y + b.h/2, w: 5, h: 14, vy: 400, vx: a*300, enemy:true });
       }
     } else {
       b.shootTimer = 0.7;
@@ -651,7 +922,7 @@ function updateBoss(dt) {
 }
 
 /* ============================================================
-   PARTICLES
+   PARTICLES & FLOATERS
 ============================================================ */
 function burst(x, y, n, colors, speed=180, life=0.6, size=4) {
   for (let i = 0; i < n; i++) {
@@ -664,251 +935,48 @@ function burst(x, y, n, colors, speed=180, life=0.6, size=4) {
       size: size * (0.6 + Math.random()*0.8)
     });
   }
-  // حلقه‌ی شوک
-  game.particles.push({
-    x, y, ring:true, r:5, maxR:60, life:0.35, maxLife:0.35, color:"#fff"
-  });
+  game.particles.push({ x, y, ring:true, r:5, maxR:60, life:0.35, maxLife:0.35, color:"#fff" });
 }
 
-/* ============================================================
-   NETWORK (PeerJS)
-============================================================ */
-const net = {
-  peer:null, conn:null, isHost:false, connected:false,
-  reconnectTimer:0, pendingSend:0
-};
-
-function genCode() {
-  return Math.floor(100000 + Math.random()*900000).toString();
-}
-
-function startHost() {
-  initAudio();
-  net.isHost = true;
-  const code = genCode();
-  document.getElementById("hostCode").textContent = code;
-  document.getElementById("hostStatus").textContent = "در حال آماده‌سازی سرور...";
-  const qrHolder = document.getElementById("qrHolder");
-  qrHolder.innerHTML = "";
-  new QRCode(qrHolder, {
-    text: "rr-join:" + code,
-    width: 180, height: 180,
-    colorDark: "#0b1e0b", colorLight: "#ffffff"
-  });
-  document.getElementById("hostLobby").classList.remove("hidden");
-  document.getElementById("lanMenu").classList.add("hidden");
-
-  try {
-    net.peer = new Peer("rr-" + code, { debug: 0 });
-    net.peer.on("open", () => {
-      document.getElementById("hostStatus").textContent = "منتظر اتصال حریف...";
-    });
-    net.peer.on("connection", conn => {
-      net.conn = conn;
-      conn.on("open", () => {
-        net.connected = true;
-        document.getElementById("hostStatus").textContent = "حریف وصل شد! شروع...";
-        sfx("level");
-        setTimeout(() => startGame("lan"), 500);
-      });
-      conn.on("data", data => {
-        if (data && data.t === "in") {
-          game.remoteInput = data;
-        } else if (data && data.t === "chat") {
-          showChat(data.e);
-        }
-      });
-      conn.on("close", () => onDisconnect());
-      conn.on("error", () => onDisconnect());
-    });
-    net.peer.on("error", err => {
-      document.getElementById("hostStatus").textContent = "خطا: " + (err.type || err);
-    });
-  } catch(e) {
-    document.getElementById("hostStatus").textContent = "خطا: " + e.message;
-  }
-}
-
-function startJoin() {
-  initAudio();
-  const code = document.getElementById("joinCode").value.trim();
-  if (code.length !== 6) {
-    document.getElementById("joinStatus").textContent = "کد باید ۶ رقم باشه";
-    return;
-  }
-  net.isHost = false;
-  document.getElementById("joinStatus").textContent = "در حال اتصال...";
-  try {
-    net.peer = new Peer(null, { debug: 0 });
-    net.peer.on("open", () => {
-      net.conn = net.peer.connect("rr-" + code, { reliable: true });
-      net.conn.on("open", () => {
-        net.connected = true;
-        document.getElementById("joinStatus").textContent = "وصل شد! شروع...";
-        setTimeout(() => startGame("lan"), 500);
-      });
-      net.conn.on("data", data => {
-        if (data && data.t === "state") {
-          applyRemoteState(data);
-        } else if (data && data.t === "chat") {
-          showChat(data.e);
-        }
-      });
-      net.conn.on("close", () => onDisconnect());
-      net.conn.on("error", () => onDisconnect());
-    });
-    net.peer.on("error", err => {
-      document.getElementById("joinStatus").textContent = "خطا: " + (err.type || err);
-    });
-  } catch(e) {
-    document.getElementById("joinStatus").textContent = "خطا: " + e.message;
-  }
-}
-
-function onDisconnect() {
-  net.connected = false;
-  if (game.running) {
-    game.paused = true;
-    document.getElementById("reconnect").classList.remove("hidden");
-    let t = 30;
-    const iv = setInterval(() => {
-      t--;
-      document.getElementById("reconnectStatus").textContent = "تا " + t + " ثانیه صبر...";
-      if (net.connected) { clearInterval(iv); document.getElementById("reconnect").classList.add("hidden"); game.paused = false; }
-      if (t <= 0) { clearInterval(iv); document.getElementById("reconnect").classList.add("hidden"); backToMenu(); }
-    }, 1000);
-  }
-}
-
-function backToMenu() {
-  game.running = false; game.paused = false; game.over = false;
-  stopEngine();
-  ["over","pause","hud","pauseBtn","touchControls","reconnect","shop","hostLobby","joinMenu"].forEach(id => {
-    document.getElementById(id).classList.add("hidden");
-  });
-  document.getElementById("menu").classList.remove("hidden");
-  document.getElementById("chatBox").classList.add("hidden");
-}
-
-function showChat(e) {
-  toast(e, 1.2);
-  sfx("chat");
-}
-
-function sendInput() {
-  if (!net.connected || !net.conn) return;
-  if (net.isHost) return; // host خودش ورودی محلی داره
-  const data = {
-    t: "in",
-    l: input.left?1:0, r: input.right?1:0,
-    u: input.up?1:0, d: input.down?1:0,
-    f: input.fire?1:0
-  };
-  try { net.conn.send(data); } catch(e){}
-}
-
-function sendState() {
-  if (!net.connected || !net.conn || !net.isHost) return;
-  net.pendingSend++;
-  if (net.pendingSend < 3) return; // throttle
-  net.pendingSend = 0;
-  const data = {
-    t: "state",
-    score: game.score, level: game.level, lives: game.lives, lives2: game.lives2,
-    fuel: game.fuel, fuel2: game.fuel2,
-    scrollY: game.scrollY, night: game.night,
-    shake: game.shake,
-    isBoss: game.isBoss,
-    boss: game.boss ? { x: game.boss.x, y: game.boss.y, w: game.boss.w, h: game.boss.h, hp: game.boss.hp, maxHp: game.boss.maxHp, phase: game.boss.phase } : null,
-    p: game.player ? { x: game.player.x, y: game.player.y, c: game.player.color, inv: game.player.invuln, sh: game.shield } : null,
-    p2: game.player2 ? { x: game.player2.x, y: game.player2.y, c: game.player2.color, inv: game.player2.invuln } : null,
-    enemies: game.enemies.map(e => ({ x:e.x, y:e.y, w:e.w, h:e.h, type:e.type })),
-    bullets: game.bullets.map(b => ({ x:b.x, y:b.y, w:b.w, h:b.h, enemy:b.enemy?1:0 })),
-    tanks: game.tanks.map(t => ({ x:t.x, y:t.y, w:t.w, h:t.h })),
-    powerups: game.powerups.map(p => ({ x:p.x, y:p.y, w:p.w, h:p.h, type:p.type })),
-    stars: game.stars.map(s => ({ x:s.x, y:s.y, w:s.w, h:s.h })),
-    bridges: game.bridges.map(b => ({ y:b.y, h:b.h, gapX:b.gapX, gapW:b.gapW })),
-    islands: game.islands.map(i => ({ x:i.x, y:i.y, w:i.w, h:i.h }))
-  };
-  try { net.conn.send(data); } catch(e){}
-}
-
-function applyRemoteState(data) {
-  game.score = data.score;
-  game.level = data.level;
-  game.lives = data.lives;
-  game.lives2 = data.lives2;
-  game.fuel = data.fuel;
-  game.fuel2 = data.fuel2;
-  game.scrollY = data.scrollY;
-  game.night = data.night;
-  game.shake = data.shake;
-  game.isBoss = data.isBoss;
-  game.boss = data.boss;
-  if (data.p) {
-    if (!game.player) game.player = createPlayer(2);
-    game.player.x = data.p.x; game.player.y = data.p.y;
-    game.player.color = 2;
-    game.player.invuln = data.p.inv;
-    game.shield = data.p.sh;
-  }
-  if (data.p2) {
-    if (!game.player2) game.player2 = createPlayer(1);
-    game.player2.x = data.p2.x; game.player2.y = data.p2.y;
-    game.player2.color = 1;
-    game.player2.invuln = data.p2.inv;
-  }
-  game.enemies = data.enemies;
-  game.bullets = data.bullets;
-  game.tanks = data.tanks;
-  game.powerups = data.powerups;
-  game.stars = data.stars;
-  game.bridges = data.bridges;
-  game.islands = data.islands;
-  updateHUD();
+function addFloater(x, y, text, color) {
+  game.floaters.push({ x, y, text, color: color || "#fff2a0", life: 1.0, maxLife: 1.0 });
 }
 
 /* ============================================================
    START / RESET
 ============================================================ */
-function startGame(mode) {
+function startGame() {
   initAudio();
-  startEngine();
-  if (mode) game.mode = mode;
+  if (settings.sound === "on") startEngine();
+  if (settings.music === "on") startMusic();
   game.running = true; game.paused = false; game.over = false;
-  game.score = 0; game.level = 1;
-  game.lives = 3; game.lives2 = 3;
-  game.fuel = CFG.fuel.max; game.fuel2 = CFG.fuel.max;
+  game.score = 0; game.level = 1; game.day = 1;
+  const extraLife = player.upgrades.extraLife || 0;
+  game.lives = 3 + extraLife;
+  game.fuel = CFG.fuel.max;
   game.scrollY = 0; game.shake = 0; game.night = false;
-  game.shield = 0; game.doubleShot = 0; game.freeze = 0; game.magnet = 0; game.triple = 0;
+  game.shield = player.upgrades.shieldStart > 0 ? 5 : 0;
+  game.doubleShot = 0; game.freeze = 0; game.magnet = 0; game.triple = 0;
   game.spawnTimer = 0; game.tankTimer = 0; game.bridgeTimer = 0; game.starTimer = 0;
-  game.isBoss = false; game.boss = null; game.bossKilled = 0;
+  game.isBoss = false; game.boss = null;
   game.bullets = []; game.enemies = []; game.particles = [];
-  game.powerups = []; game.tanks = []; game.bridges = []; game.islands = []; game.stars = [];
-  game.activePlayer = 1;
-  game.upgradeSpeed = 0; game.upgradeBombs = 0; game.bombs = 0;
-  game.player = createPlayer(1);
+  game.powerups = []; game.tanks = []; game.bridges = []; game.islands = []; game.stars = []; game.floaters = [];
+  game.combo = 0; game.comboTimer = 0; game.maxCombo = 0;
+  game.coinsEarned = 0; game.killsThisStage = 0; game.hitsThisStage = 0;
+  game.starsCollected = 0;
+  game.player = createPlayer();
   game.player.x = LOGICAL_W/2;
-  if (game.mode === "lan") {
-    game.player2 = createPlayer(2);
-    if (net.isHost) {
-      // host بازیکن ۱ محلی، بازیکن ۲ ریموت
-      game.player2.x = LOGICAL_W * 0.3;
-    } else {
-      // client بازیکن ۲ محلی، بازیکن ۱ ریموت
-      game.player2.x = LOGICAL_W/2;
-      game.player.x = LOGICAL_W * 0.3;
-    }
-  } else {
-    game.player2 = null;
-  }
+  game.mode = settings.mode;
 
-  ["menu","over","pause","lanMenu","hostLobby","joinMenu","shop","reconnect"].forEach(id => {
+  player.totalGames++;
+  savePlayer();
+  checkAchievements();
+
+  ["menu","over","pause","midShop","daily"].forEach(id => {
     document.getElementById(id).classList.add("hidden");
   });
   document.getElementById("hud").classList.remove("hidden");
   document.getElementById("pauseBtn").classList.remove("hidden");
-  if (game.mode === "lan") document.getElementById("chatBox").classList.remove("hidden");
   updateTouchControlsVisibility();
   updateHUD();
 }
@@ -926,29 +994,51 @@ function togglePause() {
   if (!game.running || game.over) return;
   game.paused = !game.paused;
   document.getElementById("pause").classList.toggle("hidden", !game.paused);
-  if (game.paused) stopEngine(); else startEngine();
+  if (game.paused) { stopEngine(); stopMusic(); }
+  else { if (settings.sound === "on") startEngine(); if (settings.music === "on") startMusic(); }
   updateTouchControlsVisibility();
 }
 document.getElementById("pauseBtn").addEventListener("click", togglePause);
 document.getElementById("resumeBtn").addEventListener("click", togglePause);
 document.getElementById("quitBtn").addEventListener("click", backToMenu);
 
+function backToMenu() {
+  game.running = false; game.paused = false; game.over = false;
+  stopEngine(); stopMusic();
+  ["over","pause","hud","pauseBtn","touchControls","midShop","daily"].forEach(id => {
+    document.getElementById(id).classList.add("hidden");
+  });
+  document.getElementById("menu").classList.remove("hidden");
+  updateCoinDisplays();
+  renderLeaderboard();
+}
+
 function gameOver() {
   game.over = true; game.running = false;
-  stopEngine();
-  if (game.score > bestScore) { bestScore = game.score; store.set("best", bestScore); }
-  leaderboard.push({ score: game.score, level: game.level, date: Date.now() });
-  leaderboard.sort((a,b) => b.score - a.score);
-  leaderboard = leaderboard.slice(0, 10);
-  store.set("leaderboard", leaderboard);
+  stopEngine(); stopMusic();
+
+  // سکه‌های این دور
+  const coinsFromScore = Math.floor(game.score / 100);
+  const totalCoins = game.coinsEarned + coinsFromScore;
+  addCoins(totalCoins, "امتیاز بازی");
+  if (game.score > player.best) player.best = game.score;
+  if (game.score > player.stats.maxScore) player.stats.maxScore = game.score;
+  if (game.maxCombo > player.stats.maxCombo) player.stats.maxCombo = game.maxCombo;
+  player.leaderboard.push({ score: game.score, level: game.level, theme: settings.theme, date: Date.now() });
+  player.leaderboard.sort((a,b) => b.score - a.score);
+  player.leaderboard = player.leaderboard.slice(0, 10);
+  if (game.hitsThisStage === 0 && game.level > 1) player.stats.noHitStages++;
+  savePlayer();
+  checkAchievements();
+
   document.getElementById("finalScore").textContent = game.score;
+  document.getElementById("finalCoins").textContent = totalCoins;
   document.getElementById("finalLevel").textContent = game.level;
-  document.getElementById("finalBest").textContent = bestScore;
+  document.getElementById("finalBest").textContent = player.best;
   document.getElementById("over").classList.remove("hidden");
   document.getElementById("hud").classList.add("hidden");
   document.getElementById("pauseBtn").classList.add("hidden");
   document.getElementById("touchControls").classList.add("hidden");
-  document.getElementById("chatBox").classList.add("hidden");
 }
 
 /* ============================================================
@@ -957,7 +1047,8 @@ function gameOver() {
 function updateHUD() {
   document.getElementById("score").textContent = game.score;
   document.getElementById("level").textContent = game.level;
-  document.getElementById("lives1").textContent = game.lives;
+  document.getElementById("day").textContent = Math.floor((game.level-1)/3)+1;
+  document.getElementById("lives").textContent = game.lives;
   const f = Math.max(0, game.fuel);
   document.getElementById("fuelFill").style.width = (f/CFG.fuel.max*100) + "%";
   document.getElementById("fuelFill").style.background =
@@ -984,52 +1075,26 @@ function update(dt) {
   if (!game.running || game.paused) return;
 
   const diff = diffMult();
-
-  // ورودی بازیکن محلی
   let inp = { l:input.left, r:input.right, u:input.up, d:input.down, f:input.fire };
 
-  // توی حالت LAN: host ورودی ریموت رو برای player2 می‌گیره، client برعکس
-  let inp2 = null;
-  if (game.mode === "lan" && game.remoteInput) {
-    inp2 = { l:!!game.remoteInput.l, r:!!game.remoteInput.r, u:!!game.remoteInput.u, d:!!game.remoteInput.d, f:!!game.remoteInput.f };
-  }
-
-  // انتخاب اینکه ورودی محلی برای کدوم بازیکنه
-  let localFor = 1;
-  let remoteFor = 2;
-  if (game.mode === "lan" && !net.isHost) {
-    localFor = 2; remoteFor = 1;
-  }
-
-  // کنترل drag/tilt
-  if (settings.control === "drag" && input.pointerX !== null && game.player) {
+  if (settings.control === "drag" && input.pointerX !== null) {
     const target = input.pointerX / scale;
-    const pl = localFor === 1 ? game.player : game.player2;
-    const dx = target - pl.x;
+    const dx = target - game.player.x;
     inp.l = dx < -10; inp.r = dx > 10;
     if (input.pointerY !== null) {
       const ty = input.pointerY / scale;
-      inp.u = ty < pl.y - 20; inp.d = ty > pl.y + 20;
+      inp.u = ty < game.player.y - 20; inp.d = ty > game.player.y + 20;
     }
   }
   if (settings.control === "tilt") {
     inp.l = tiltX < -0.15; inp.r = tiltX > 0.15;
   }
 
-  // حرکت بازیکن ۱
-  if (game.player) updatePlayer(game.player, localFor === 1 ? inp : (inp2 || {l:0,r:0,u:0,d:0,f:0}), dt, 1);
-  // حرکت بازیکن ۲
-  if (game.player2) updatePlayer(game.player2, localFor === 2 ? inp : (inp2 || {l:0,r:0,u:0,d:0,f:0}), dt, 2);
+  updatePlayer(game.player, inp, dt);
 
-  // سوخت
   game.fuel -= CFG.fuel.drainPerSec * diff.drain * dt;
-  if (game.fuel <= 0) { game.fuel = 0; killPlayer(1); }
-  if (game.player2) {
-    game.fuel2 -= CFG.fuel.drainPerSec * diff.drain * dt;
-    if (game.fuel2 <= 0) { game.fuel2 = 0; killPlayer(2); }
-  }
+  if (game.fuel <= 0) { game.fuel = 0; killPlayer(); }
 
-  // تایمر پاورآپ‌ها
   if (game.shield > 0) game.shield -= dt;
   if (game.doubleShot > 0) game.doubleShot -= dt;
   if (game.freeze > 0) game.freeze -= dt;
@@ -1037,19 +1102,19 @@ function update(dt) {
   if (game.triple > 0) game.triple -= dt;
   if (game.shake > 0) game.shake = Math.max(0, game.shake - dt*40);
 
+  // کمبو
+  if (game.comboTimer > 0) {
+    game.comboTimer -= dt;
+    if (game.comboTimer <= 0) { game.combo = 0; updateComboDisplay(); }
+  }
+
   const slow = game.freeze > 0 ? 0.35 : 1;
-
-  // اسکرول
   game.scrollY += levelSpeed() * slow * dt;
-
-  // شب/روز هر ۳ مرحله
   game.night = (Math.floor((game.level-1)/3) % 2) === 1;
 
-  // باس
   if (game.isBoss && game.boss) updateBoss(dt);
 
-  // اسپاونرها
-  if (!game.isBoss) {
+  if (!game.isBoss && game.mode !== "infinite") {
     game.spawnTimer -= dt;
     if (game.spawnTimer <= 0) {
       game.spawnTimer = levelSpawnRate() * (0.6 + Math.random()*0.8);
@@ -1066,6 +1131,21 @@ function update(dt) {
     if (Math.random() < dt*0.06) spawnPowerup();
     game.starTimer -= dt;
     if (game.starTimer <= 0) { game.starTimer = 5 + Math.random()*5; spawnStar(); }
+  } else if (game.mode === "infinite") {
+    // بی‌نهایت: اسپاون دائم و سخت‌تر
+    game.spawnTimer -= dt;
+    if (game.spawnTimer <= 0) {
+      game.spawnTimer = levelSpawnRate() * (0.4 + Math.random()*0.5);
+      spawnEnemy();
+    }
+    game.tankTimer -= dt;
+    if (game.tankTimer <= 0) { game.tankTimer = 4 + Math.random()*3; spawnTank(); }
+    game.bridgeTimer -= dt;
+    if (game.bridgeTimer <= 0) { game.bridgeTimer = 10 + Math.random()*8; spawnBridge(); }
+    if (Math.random() < dt*0.3) spawnIsland();
+    if (Math.random() < dt*0.08) spawnPowerup();
+    game.starTimer -= dt;
+    if (game.starTimer <= 0) { game.starTimer = 6 + Math.random()*5; spawnStar(); }
   }
 
   // گلوله‌ها
@@ -1091,14 +1171,9 @@ function update(dt) {
       }
     }
     if (e.y > LOGICAL_H+80) { game.enemies.splice(i,1); continue; }
-    // برخورد با بازیکن‌ها
-    if (game.player && game.shield <= 0 && game.player.invuln <= 0 && rectHit(e, game.player)) {
-      burst(e.x, e.y, 16, CFG.colors.explosion, 220, 0.7, 5);
-      game.enemies.splice(i,1); killPlayer(1); continue;
-    }
-    if (game.player2 && game.player2.invuln <= 0 && rectHit(e, game.player2)) {
-      burst(e.x, e.y, 16, CFG.colors.explosion, 220, 0.7, 5);
-      game.enemies.splice(i,1); killPlayer(2); continue;
+    if (game.shield <= 0 && game.player.invuln <= 0 && rectHit(e, game.player)) {
+      burst(e.x, e.y, 16, T().colors.explosion, 220, 0.7, 5);
+      game.enemies.splice(i,1); killPlayer(); continue;
     }
   }
 
@@ -1112,14 +1187,10 @@ function update(dt) {
       if (d < 250) { t.x += dx/d * 200 * dt; t.y += dy/d * 200 * dt; }
     }
     if (t.y > LOGICAL_H+80) { game.tanks.splice(i,1); continue; }
-    if (game.player && rectHit(t, game.player)) {
+    if (rectHit(t, game.player)) {
       game.fuel = Math.min(CFG.fuel.max, game.fuel + CFG.fuel.tank);
       burst(t.x, t.y, 12, ["#fff2a0","#8fd44a","#f2d34a"], 140, 0.5, 4);
-      sfx("fuel"); game.tanks.splice(i,1); continue;
-    }
-    if (game.player2 && rectHit(t, game.player2)) {
-      game.fuel2 = Math.min(CFG.fuel.max, game.fuel2 + CFG.fuel.tank);
-      burst(t.x, t.y, 12, ["#fff2a0","#8fd44a","#f2d34a"], 140, 0.5, 4);
+      addFloater(t.x, t.y, "+سوخت", "#8fd44a");
       sfx("fuel"); game.tanks.splice(i,1);
     }
   }
@@ -1129,12 +1200,9 @@ function update(dt) {
     const pw = game.powerups[i];
     pw.y += pw.vy * dt * slow;
     if (pw.y > LOGICAL_H+60) { game.powerups.splice(i,1); continue; }
-    if (game.player && rectHit(pw, game.player)) {
-      applyPowerup(pw.type, 1); burst(pw.x, pw.y, 14, ["#f2d34a","#4ac8f2","#f24a8a"], 160, 0.5, 4);
-      sfx("power"); game.powerups.splice(i,1); continue;
-    }
-    if (game.player2 && rectHit(pw, game.player2)) {
-      applyPowerup(pw.type, 2); burst(pw.x, pw.y, 14, ["#f2d34a","#4ac8f2","#f24a8a"], 160, 0.5, 4);
+    if (rectHit(pw, game.player)) {
+      applyPowerup(pw.type);
+      burst(pw.x, pw.y, 14, ["#f2d34a","#4ac8f2","#f24a8a"], 160, 0.5, 4);
       sfx("power"); game.powerups.splice(i,1);
     }
   }
@@ -1144,14 +1212,12 @@ function update(dt) {
     const s = game.stars[i];
     s.y += s.vy * dt * slow;
     if (s.y > LOGICAL_H+60) { game.stars.splice(i,1); continue; }
-    let got = false;
-    if (game.player && rectHit(s, game.player)) got = true;
-    if (game.player2 && rectHit(s, game.player2)) got = true;
-    if (got) {
-      game.stars_collected++;
+    if (rectHit(s, game.player)) {
+      game.starsCollected++;
       game.score += 25;
-      burst(s.x, s.y, 10, ["#f2d34a","#fff2a0"], 150, 0.5, 4);
-      sfx("power"); game.stars.splice(i,1);
+      addCoins(1, "ستاره");
+      addFloater(s.x, s.y, "+1 🪙", "#f2d34a");
+      sfx("coin"); game.stars.splice(i,1);
     }
   }
 
@@ -1165,10 +1231,14 @@ function update(dt) {
   // پل‌ها
   for (let i = game.bridges.length-1; i >= 0; i--) {
     const br = game.bridges[i];
-    br.y += game.speed * slow * dt;
+    br.y += levelSpeed() * slow * dt;
     if (br.y > LOGICAL_H+60) { game.bridges.splice(i,1); continue; }
-    checkBridgeHit(br, game.player, 1);
-    checkBridgeHit(br, game.player2, 2);
+    if (game.player.y - game.player.h/2 < br.y + br.h && game.player.y + game.player.h/2 > br.y) {
+      const px = game.player.x;
+      if (px < br.gapX || px > br.gapX + br.gapW) {
+        if (game.shield <= 0 && game.player.invuln <= 0) killPlayer();
+      }
+    }
   }
 
   // برخورد گلوله‌ی خودی با دشمن
@@ -1181,14 +1251,21 @@ function update(dt) {
       if (rectHit(b, e)) {
         e.hp--;
         if (e.hp <= 0) {
-          game.score += e.points;
-          burst(e.x, e.y, 16, CFG.colors.explosion, 220, 0.7, 5);
+          const comboMult = 1 + Math.floor(game.combo/5) * 0.5;
+          const pts = Math.floor(e.points * comboMult);
+          game.score += pts;
+          addFloater(e.x, e.y, "+" + pts, "#fff2a0");
+          game.combo++; game.comboTimer = 2.5;
+          if (game.combo > game.maxCombo) game.maxCombo = game.combo;
+          updateComboDisplay();
+          player.totalKills++;
+          game.killsThisStage++;
+          burst(e.x, e.y, 16, T().colors.explosion, 220, 0.7, 5);
           sfx("explode"); game.enemies.splice(j,1);
         } else burst(e.x, e.y, 4, ["#fff2a0"], 100, 0.3, 3);
         hit = true; break;
       }
     }
-    // برخورد با باس
     if (!hit && game.boss && !game.boss.entering && rectHit(b, game.boss)) {
       game.boss.hp--;
       burst(b.x, b.y, 6, ["#fff2a0","#ffb040"], 120, 0.4, 4);
@@ -1202,11 +1279,8 @@ function update(dt) {
   for (let i = game.bullets.length-1; i >= 0; i--) {
     const b = game.bullets[i];
     if (!b.enemy) continue;
-    if (game.player && game.shield <= 0 && game.player.invuln <= 0 && rectHit(b, game.player)) {
-      game.bullets.splice(i,1); killPlayer(1); continue;
-    }
-    if (game.player2 && game.player2.invuln <= 0 && rectHit(b, game.player2)) {
-      game.bullets.splice(i,1); killPlayer(2);
+    if (game.shield <= 0 && game.player.invuln <= 0 && rectHit(b, game.player)) {
+      game.bullets.splice(i,1); killPlayer();
     }
   }
 
@@ -1225,35 +1299,51 @@ function update(dt) {
     if (pt.life <= 0) game.particles.splice(i,1);
   }
 
+  // شناورها
+  for (let i = game.floaters.length-1; i >= 0; i--) {
+    const f = game.floaters[i];
+    f.y -= 60 * dt;
+    f.life -= dt;
+    if (f.life <= 0) game.floaters.splice(i,1);
+  }
+
   // سطح‌بندی
-  const need = 500 + game.level * 250;
-  if (game.score >= need && !game.isBoss) {
-    if ((game.level + 1) % 5 === 0) {
-      // مرحله‌ی باس
-      game.level++;
-      toast("⚠ باس!", 1.5); sfx("level");
-      spawnBoss();
-    } else {
-      game.level++;
-      toast("مرحله " + game.level, 1.5); sfx("level");
-      // فروشگاه هر مرحله
-      if (game.mode !== "infinite") openShop();
+  if (game.mode !== "infinite") {
+    const need = 500 + game.level * 250;
+    if (game.score >= need && !game.isBoss) {
+      if ((game.level + 1) % 5 === 0) {
+        game.level++;
+        toast("⚠ باس!", 1.5); sfx("level");
+        spawnBoss();
+      } else {
+        game.level++;
+        toast("مرحله " + game.level, 1.5); sfx("level");
+        addCoins(5, "تکمیل مرحله");
+        const checkStage = game.hitsThisStage === 0;
+        if (checkStage) player.stats.noHitStages++;
+        game.hitsThisStage = 0;
+        checkAchievements();
+        showMidShop();
+      }
     }
   }
 
-  // Toast
   if (toastTimer > 0) { toastTimer -= dt; if (toastTimer <= 0) document.getElementById("toast").style.opacity = "0"; }
 
   updateHUD();
+}
 
-  // ارسال ورودی و state شبکه
-  if (game.mode === "lan") {
-    if (!net.isHost) sendInput();
-    if (net.isHost) { net.pendingSend++; if (net.pendingSend >= 2) { net.pendingSend = 0; sendState(); } }
+function updateComboDisplay() {
+  const el = document.getElementById("comboDisplay");
+  if (game.combo >= 3) {
+    el.textContent = "کمبو " + game.combo + "x";
+    el.classList.add("show");
+  } else {
+    el.classList.remove("show");
   }
 }
 
-function updatePlayer(p, inp, dt, idx) {
+function updatePlayer(p, inp, dt) {
   if (p.invuln > 0) p.invuln -= dt;
   let mx = 0, my = 0;
   if (inp.l) mx -= 1;
@@ -1261,7 +1351,8 @@ function updatePlayer(p, inp, dt, idx) {
   if (inp.u) my -= 1;
   if (inp.d) my += 1;
 
-  p.x += mx * CFG.jet.speed * dt;
+  const spd = CFG.jet.speed + (player.upgrades.speed || 0) * 40;
+  p.x += mx * spd * dt;
   p.y += my * CFG.jet.vySpeed * dt;
 
   const halfW = p.w/2;
@@ -1270,7 +1361,6 @@ function updatePlayer(p, inp, dt, idx) {
   if (p.y < LOGICAL_H * 0.35) p.y = LOGICAL_H * 0.35;
   if (p.y > LOGICAL_H - 60) p.y = LOGICAL_H - 60;
 
-  // شلیک
   const wantFire = (settings.fire === "auto") || inp.f;
   if (wantFire) {
     p.cooldown -= dt * 1000;
@@ -1292,23 +1382,14 @@ function updatePlayer(p, inp, dt, idx) {
   }
 }
 
-function checkBridgeHit(br, p, idx) {
-  if (!p) return;
-  if (p.y - p.h/2 < br.y + br.h && p.y + p.h/2 > br.y) {
-    const px = p.x;
-    if (px < br.gapX || px > br.gapX + br.gapW) {
-      if (game.shield <= 0 && p.invuln <= 0) killPlayer(idx);
-    }
-  }
-}
-
-function applyPowerup(type, idx) {
+function applyPowerup(type) {
   if (type === "shield") { game.shield = 6; toast("سپر!", 0.8); }
   else if (type === "double") { game.doubleShot = 8; toast("شلیک دوگانه!", 0.8); }
   else if (type === "bomb") {
     for (const e of game.enemies) {
       game.score += Math.floor(e.points * 0.5);
-      burst(e.x, e.y, 10, CFG.colors.explosion, 200, 0.6, 5);
+      player.totalKills++;
+      burst(e.x, e.y, 10, T().colors.explosion, 200, 0.6, 5);
     }
     game.enemies.length = 0;
     game.shake = 20; sfx("explode"); toast("بمب!", 0.9);
@@ -1317,67 +1398,40 @@ function applyPowerup(type, idx) {
   else if (type === "magnet") { game.magnet = 8; toast("مغناطیس!", 0.8); }
 }
 
-function killPlayer(idx) {
-  const p = idx === 1 ? game.player : game.player2;
+function killPlayer() {
+  const p = game.player;
   if (!p) return;
   if (p.invuln > 0 && game.shield <= 0) return;
-  if (game.shield > 0 && idx === 1) {
+  if (game.shield > 0) {
     game.shield = 0; p.invuln = 1.0;
     burst(p.x, p.y, 14, ["#4ac8f2","#fff"], 200, 0.5, 4);
     game.shake = 10; return;
   }
-  burst(p.x, p.y, 24, CFG.colors.explosion, 260, 0.9, 6);
+  burst(p.x, p.y, 24, T().colors.explosion, 260, 0.9, 6);
   sfx("explode"); game.shake = 25;
-
-  if (game.mode === "lan") {
-    // توی LAN: اگه یکی مرد، اون یکی ادامه بده
-    if (idx === 1) {
-      game.lives--;
-      if (game.lives <= 0) {
-        if (game.lives2 > 0) {
-          toast("بازیکن ۱ باخت! بازیکن ۲ ادامه بده", 2);
-          game.player = null;
-          game.lives = 0;
-        } else gameOver();
-      } else {
-        p.invuln = 2.0;
-        p.x = LOGICAL_W/2;
-        if (idx === 1) game.fuel = Math.max(game.fuel, 40);
-      }
-    } else {
-      game.lives2--;
-      if (game.lives2 <= 0) {
-        if (game.lives > 0) {
-          toast("بازیکن ۲ باخت! بازیکن ۱ ادامه بده", 2);
-          game.player2 = null;
-          game.lives2 = 0;
-        } else gameOver();
-      } else {
-        p.invuln = 2.0;
-        p.x = LOGICAL_W/2;
-        game.fuel2 = Math.max(game.fuel2, 40);
-      }
-    }
-  } else {
-    game.lives--;
-    if (game.lives <= 0) { gameOver(); return; }
-    p.invuln = 2.0;
-    p.x = LOGICAL_W/2;
-    game.fuel = Math.max(game.fuel, 40);
-  }
+  game.hitsThisStage++;
+  game.combo = 0; updateComboDisplay();
+  game.lives--;
+  if (game.lives <= 0) { gameOver(); return; }
+  p.invuln = 2.0;
+  p.x = LOGICAL_W/2;
+  game.fuel = Math.max(game.fuel, 40);
 }
 
 function killBoss() {
   const b = game.boss;
-  burst(b.x, b.y, 40, CFG.colors.explosion, 320, 1.2, 8);
+  burst(b.x, b.y, 40, T().colors.explosion, 320, 1.2, 8);
   sfx("explode"); game.shake = 40;
   game.score += 1000;
+  player.totalBossKills++;
+  addFloater(b.x, b.y, "+1000", "#f2d34a");
+  addCoins(10, "کشتن باس");
   game.isBoss = false;
   game.boss = null;
-  toast("باس نابود شد! +1000", 2);
-  // پاداش
+  toast("باس نابود شد! +۱۰ سکه", 2);
   game.doubleShot = 10;
   game.shield = 8;
+  checkAchievements();
 }
 
 function rectHit(a, b) {
@@ -1385,56 +1439,26 @@ function rectHit(a, b) {
 }
 
 /* ============================================================
-   SHOP
+   MID-STAGE SHOP
 ============================================================ */
-let shopOpen = false;
-function openShop() {
-  shopOpen = true;
+function showMidShop() {
   game.paused = true;
-  document.getElementById("shop").classList.remove("hidden");
-  document.getElementById("shopScore").textContent = game.score;
-  renderShop();
+  document.getElementById("midShop").classList.remove("hidden");
+  document.getElementById("midScore").textContent = game.score;
+  document.getElementById("midCoins").textContent = player.coins;
 }
-function renderShop() {
-  const items = [
-    { id:"speed", name:"⚡ سرعت گلوله", cost:200, max:3, cur:game.upgradeSpeed },
-    { id:"bomb", name:"💣 بمب اضافه", cost:150, max:5, cur:game.bombs },
-    { id:"fuel", name:"⛽ باک پر", cost:100, max:99, cur:0 },
-    { id:"shield", name:"🛡 سپر فوری", cost:120, max:99, cur:0 }
-  ];
-  const holder = document.getElementById("shopItems");
-  holder.innerHTML = "";
-  items.forEach(it => {
-    const div = document.createElement("div");
-    div.className = "opt";
-    div.innerHTML = `<label>${it.name}</label>
-      <div class="seg">
-        <span style="color:#f2d34a;">${it.cur}/${it.max === 99 ? "∞" : it.max}</span>
-        <button data-id="${it.id}">بخر (${it.cost})</button>
-      </div>`;
-    holder.appendChild(div);
-  });
-  holder.querySelectorAll("button").forEach(b => {
-    b.addEventListener("click", () => {
-      const id = b.dataset.id;
-      const it = items.find(x => x.id === id);
-      if (game.score < it.cost) { toast("امتیاز کافی نیست", 1); return; }
-      if (it.cur >= it.max && it.max !== 99) { toast("حداکثره", 1); return; }
-      game.score -= it.cost;
-      if (id === "speed") game.upgradeSpeed++;
-      if (id === "bomb") game.bombs++;
-      if (id === "fuel") game.fuel = CFG.fuel.max;
-      if (id === "shield") game.shield = 6;
-      sfx("power");
-      document.getElementById("shopScore").textContent = game.score;
-      renderShop();
-      updateHUD();
-    });
-  });
-}
-document.getElementById("shopDoneBtn").addEventListener("click", () => {
-  shopOpen = false; game.paused = false;
-  document.getElementById("shop").classList.add("hidden");
+document.getElementById("midContinue").addEventListener("click", () => {
+  game.paused = false;
+  document.getElementById("midShop").classList.add("hidden");
+});
+document.getElementById("midOpenShop").addEventListener("click", () => {
+  document.getElementById("midShop").classList.add("hidden");
+  document.getElementById("menu").classList.remove("hidden");
+  game.running = false;
+  document.getElementById("hud").classList.add("hidden");
+  document.getElementById("pauseBtn").classList.add("hidden");
+  document.getElementById("touchControls").classList.add("hidden");
+  switchTab("shop");
 });
 
 /* ============================================================
@@ -1446,106 +1470,97 @@ function render() {
     const s = game.shake;
     ctx.translate((Math.random()-0.5)*s, (Math.random()-0.5)*s);
   }
-  ctx.fillStyle = "#0b1e0b";
+  ctx.fillStyle = "#000";
   ctx.fillRect(-50, -50, CW+100, CH+100);
   ctx.save();
   ctx.scale(scale, scale);
-  drawBackground();
-  drawIslands();
-  drawBridges();
-  drawTanks();
-  drawStars();
-  drawEnemies();
-  drawBoss();
+  const C = T().colors;
+  drawBackground(C);
+  drawIslands(C);
+  drawBridges(C);
+  drawTanks(C);
+  drawStars(C);
+  drawEnemies(C);
+  drawBoss(C);
   drawPowerups();
-  drawBullets();
-  if (game.running && !game.over) { drawPlayerBy(game.player); drawPlayerBy(game.player2); }
+  drawBullets(C);
+  if (game.running && !game.over && game.player) drawPlayer(game.player, C);
   drawParticles();
-  // شب
+  drawFloaters();
   if (game.night) {
-    ctx.fillStyle = "rgba(0,10,40,0.45)";
+    ctx.fillStyle = "rgba(0,10,40,0.35)";
     ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
   }
   ctx.restore();
   ctx.restore();
 }
 
-function drawBackground() {
-  const water = game.night ? CFG.colors.waterNight : CFG.colors.water;
-  const waterDark = game.night ? CFG.colors.waterNightDark : CFG.colors.waterDark;
-  const land = game.night ? CFG.colors.landNight : CFG.colors.land;
-  const landDark = game.night ? CFG.colors.landNightDark : CFG.colors.landDark;
-  ctx.fillStyle = water;
+function drawBackground(C) {
+  ctx.fillStyle = C.water;
   ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
   const stripeH = 40;
   const off = (game.scrollY % stripeH);
-  ctx.fillStyle = waterDark;
+  ctx.fillStyle = C.waterDark;
   for (let y = -stripeH; y < LOGICAL_H+stripeH; y += stripeH) ctx.fillRect(0, y+off, LOGICAL_W, 8);
   const shoreW = Math.max(30, LOGICAL_W*0.08);
-  ctx.fillStyle = land;
+  ctx.fillStyle = C.land;
   ctx.fillRect(0,0,shoreW,LOGICAL_H);
   ctx.fillRect(LOGICAL_W-shoreW,0,shoreW,LOGICAL_H);
-  ctx.fillStyle = landDark;
+  ctx.fillStyle = C.landDark;
   for (let y = -40 + (game.scrollY*0.5 % 40); y < LOGICAL_H+40; y += 40) {
     ctx.fillRect(0, y, shoreW, 6);
     ctx.fillRect(LOGICAL_W-shoreW, y+20, shoreW, 6);
   }
-  ctx.fillStyle = CFG.colors.sand;
+  ctx.fillStyle = C.sand;
   ctx.fillRect(shoreW-8, 0, 8, LOGICAL_H);
   ctx.fillRect(LOGICAL_W-shoreW, 0, 8, LOGICAL_H);
 }
 
-function drawIslands() {
+function drawIslands(C) {
   for (const isl of game.islands) {
-    ctx.fillStyle = CFG.colors.sand;
+    ctx.fillStyle = C.sand;
     ctx.fillRect(isl.x, isl.y, isl.w, isl.h);
-    ctx.fillStyle = game.night ? CFG.colors.landNight : CFG.colors.land;
+    ctx.fillStyle = C.land;
     ctx.fillRect(isl.x+4, isl.y+4, isl.w-8, isl.h-8);
-    ctx.fillStyle = game.night ? CFG.colors.landNightDark : CFG.colors.landDark;
+    ctx.fillStyle = C.landDark;
     ctx.fillRect(isl.x+8, isl.y+8, isl.w-16, 6);
   }
 }
 
-function drawBridges() {
+function drawBridges(C) {
   for (const br of game.bridges) {
-    ctx.fillStyle = CFG.colors.road;
+    ctx.fillStyle = C.road;
     ctx.fillRect(0, br.y, LOGICAL_W, br.h);
-    ctx.fillStyle = "#6a6a6a";
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
     for (let x = 0; x < LOGICAL_W; x += 20) ctx.fillRect(x, br.y, 10, br.h);
-    ctx.fillStyle = game.night ? CFG.colors.waterNight : CFG.colors.water;
+    ctx.fillStyle = C.water;
     ctx.fillRect(br.gapX, br.y-2, br.gapW, br.h+4);
-    ctx.fillStyle = "#4a4a4a";
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
     ctx.fillRect(0, br.y+br.h, LOGICAL_W, 4);
   }
 }
 
-function drawTanks() {
+function drawTanks(C) {
   for (const t of game.tanks) {
     const x = t.x - t.w/2, y = t.y - t.h/2;
-    // سایه
     ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.fillRect(x+3, y+3, t.w, t.h);
-    // بدنه
-    ctx.fillStyle = CFG.colors.tankBodyDark;
+    ctx.fillStyle = C.tankBodyDark;
     ctx.fillRect(x, y, t.w, t.h);
-    ctx.fillStyle = CFG.colors.tankBody;
+    ctx.fillStyle = C.tankBody;
     ctx.fillRect(x+3, y+3, t.w-6, t.h-6);
-    // نوار بالا و پایین
-    ctx.fillStyle = CFG.colors.tankDark;
+    ctx.fillStyle = C.tankDark;
     ctx.fillRect(x+3, y+3, t.w-6, 6);
     ctx.fillRect(x+3, y+t.h-9, t.w-6, 6);
-    // علامت ⛽
-    ctx.fillStyle = CFG.colors.tankSign;
+    ctx.fillStyle = C.tankSign;
     ctx.fillRect(x+6, y+t.h/2-9, t.w-12, 18);
-    ctx.fillStyle = "#a05000";
+    ctx.fillStyle = "#000";
     ctx.font = "bold 16px monospace";
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText("⛽", t.x, t.y);
-    // پلاک F
-    ctx.fillStyle = "#333";
-    ctx.font = "bold 10px monospace";
-    ctx.fillText("FUEL", t.x, y+8);
-    // هاله‌ی چشمک‌زن
+    ctx.fillStyle = "#000";
+    ctx.font = "bold 9px monospace";
+    ctx.fillText("FUEL", t.x, y+11);
     const pulse = 0.4 + 0.3*Math.sin(performance.now()/200);
     ctx.strokeStyle = "rgba(255,242,160,"+pulse+")";
     ctx.lineWidth = 2;
@@ -1553,13 +1568,13 @@ function drawTanks() {
   }
 }
 
-function drawStars() {
+function drawStars(C) {
   for (const s of game.stars) {
     const pulse = 1 + Math.sin(performance.now()/120)*0.15;
     ctx.save();
     ctx.translate(s.x, s.y);
     ctx.scale(pulse, pulse);
-    ctx.fillStyle = CFG.colors.star;
+    ctx.fillStyle = C.tankSign;
     ctx.beginPath();
     for (let i = 0; i < 5; i++) {
       const a = -Math.PI/2 + i * Math.PI*2/5;
@@ -1574,45 +1589,45 @@ function drawStars() {
   }
 }
 
-function drawEnemies() {
+function drawEnemies(C) {
   for (const e of game.enemies) {
     const x = e.x - e.w/2, y = e.y - e.h/2;
     ctx.fillStyle = "rgba(0,0,0,0.2)";
     ctx.fillRect(x+2, y+2, e.w, e.h);
     if (e.type === "heli") {
-      ctx.fillStyle = CFG.colors.heliDark;
+      ctx.fillStyle = C.heliDark;
       ctx.fillRect(x, y+8, e.w, e.h-12);
-      ctx.fillStyle = CFG.colors.heli;
+      ctx.fillStyle = C.heli;
       ctx.fillRect(x+3, y+10, e.w-6, e.h-16);
       const ph = (performance.now()/40) % 2;
-      ctx.fillStyle = "#222";
+      ctx.fillStyle = "#000";
       ctx.fillRect(x-4+ph*2, y+3, e.w+8-ph*4, 3);
-      ctx.fillStyle = CFG.colors.cockpit;
+      ctx.fillStyle = C.cockpit;
       ctx.fillRect(x+e.w/2-4, y+14, 8, 6);
-      ctx.fillStyle = CFG.colors.heliDark;
+      ctx.fillStyle = C.heliDark;
       ctx.fillRect(x+e.w-2, y+e.h/2, 8, 4);
     } else if (e.type === "ship") {
-      ctx.fillStyle = CFG.colors.shipDark;
+      ctx.fillStyle = C.shipDark;
       ctx.fillRect(x, y, e.w, e.h);
-      ctx.fillStyle = CFG.colors.ship;
+      ctx.fillStyle = C.ship;
       ctx.fillRect(x+2, y+3, e.w-4, e.h-6);
       ctx.fillStyle = "#fff";
       ctx.fillRect(x+e.w/2-5, y+6, 10, 6);
-      ctx.fillStyle = "#333";
+      ctx.fillStyle = "#000";
       ctx.fillRect(x+e.w/2-2, y-2, 4, 6);
     } else if (e.type === "balloon") {
-      ctx.fillStyle = CFG.colors.balloonDark;
+      ctx.fillStyle = C.balloonDark;
       ctx.beginPath(); ctx.arc(e.x, y+12, 12, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = CFG.colors.balloon;
+      ctx.fillStyle = C.balloon;
       ctx.beginPath(); ctx.arc(e.x, y+10, 10, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle = "#8a5a2a";
       ctx.fillRect(e.x-5, y+24, 10, 8);
     } else if (e.type === "jet") {
-      ctx.fillStyle = "#8a2a2a";
+      ctx.fillStyle = C.jetAccent;
       ctx.fillRect(x, y+4, e.w, e.h-8);
-      ctx.fillStyle = CFG.colors.jetAccent;
+      ctx.fillStyle = "#8a2a2a";
       ctx.fillRect(x+3, y+6, e.w-6, e.h-12);
-      ctx.fillStyle = CFG.colors.cockpit;
+      ctx.fillStyle = C.cockpit;
       ctx.fillRect(x+e.w/2-3, y+10, 6, 6);
       ctx.fillStyle = "#ffb040";
       ctx.fillRect(x+e.w/2-3, y+e.h-4, 6, 6);
@@ -1620,25 +1635,21 @@ function drawEnemies() {
   }
 }
 
-function drawBoss() {
+function drawBoss(C) {
   if (!game.boss) return;
   const b = game.boss;
   const x = b.x - b.w/2, y = b.y - b.h/2;
-  // بدنه
   ctx.fillStyle = "#3a3a3a";
   ctx.fillRect(x, y, b.w, b.h);
   ctx.fillStyle = "#5a5a5a";
   ctx.fillRect(x+6, y+6, b.w-12, b.h-12);
-  // جزئیات
   ctx.fillStyle = "#2a2a2a";
   ctx.fillRect(x+20, y+20, b.w-40, 20);
-  ctx.fillStyle = "#8a2a2a";
+  ctx.fillStyle = C.jetAccent;
   ctx.fillRect(x+10, y+b.h-30, 30, 20);
   ctx.fillRect(x+b.w-40, y+b.h-30, 30, 20);
-  // کابین
-  ctx.fillStyle = CFG.colors.cockpit;
+  ctx.fillStyle = C.cockpit;
   ctx.fillRect(b.x-30, y+15, 60, 25);
-  // نوار سلامتی
   const pct = b.hp / b.maxHp;
   ctx.fillStyle = "#1a1a1a";
   ctx.fillRect(x, y-20, b.w, 12);
@@ -1646,13 +1657,10 @@ function drawBoss() {
   ctx.fillRect(x, y-20, b.w*pct, 12);
   ctx.strokeStyle = "#000"; ctx.lineWidth = 2;
   ctx.strokeRect(x, y-20, b.w, 12);
-  // فاز
   ctx.fillStyle = "#fff";
   ctx.font = "bold 12px monospace";
   ctx.textAlign = "center";
   ctx.fillText("BOSS - فاز " + b.phase, b.x, y-25);
-  // لرزش اگه آسیب دیده
-  if (game.shake > 0) ctx.translate((Math.random()-0.5)*3, (Math.random()-0.5)*3);
 }
 
 function drawPowerups() {
@@ -1679,15 +1687,15 @@ function drawPowerups() {
   }
 }
 
-function drawBullets() {
+function drawBullets(C) {
   for (const b of game.bullets) {
     if (b.enemy) {
-      ctx.fillStyle = CFG.colors.enemyBullet;
+      ctx.fillStyle = C.enemyBullet;
       ctx.fillRect(b.x-b.w/2, b.y-b.h/2, b.w, b.h);
       ctx.fillStyle = "#fff";
       ctx.fillRect(b.x-1, b.y-b.h/2+2, 2, 4);
     } else {
-      ctx.fillStyle = CFG.colors.bullet;
+      ctx.fillStyle = C.bullet;
       ctx.fillRect(b.x-b.w/2, b.y-b.h/2, b.w, b.h);
       ctx.fillStyle = "#fff";
       ctx.fillRect(b.x-1, b.y-b.h/2, 2, 3);
@@ -1695,17 +1703,9 @@ function drawBullets() {
   }
 }
 
-function drawPlayerBy(p) {
-  if (!p) return;
-  const isP2 = p.color === 2;
-  const jetC = isP2 ? CFG.colors.jet2 : CFG.colors.jet;
-  const jetD = isP2 ? CFG.colors.jet2Dark : CFG.colors.jetDark;
-  const jetA = isP2 ? CFG.colors.jet2Accent : CFG.colors.jetAccent;
-  const cockpitC = isP2 ? CFG.colors.cockpit2 : CFG.colors.cockpit;
-
+function drawPlayer(p, C) {
   const x = p.x - p.w/2, y = p.y - p.h/2;
-
-  // سایه روی آب
+  // سایه
   ctx.fillStyle = "rgba(0,0,0,0.25)";
   ctx.beginPath();
   ctx.ellipse(p.x+4, p.y+p.h/2+6, p.w*0.45, 6, 0, 0, Math.PI*2);
@@ -1714,57 +1714,50 @@ function drawPlayerBy(p) {
   // شعله‌ی موتور
   const f = (performance.now()/60) % 3;
   ctx.fillStyle = "#ffb040";
-  ctx.fillRect(p.x-8, y+p.h-2, 6, 10+f);
-  ctx.fillRect(p.x+2, y+p.h-2, 6, 10+f);
+  ctx.fillRect(p.x-9, y+p.h-2, 7, 12+f);
+  ctx.fillRect(p.x+2, y+p.h-2, 7, 12+f);
   ctx.fillStyle = "#fff2a0";
-  ctx.fillRect(p.x-6, y+p.h, 3, 6+f*0.6);
-  ctx.fillRect(p.x+4, y+p.h, 3, 6+f*0.6);
+  ctx.fillRect(p.x-6, y+p.h, 3, 7+f*0.6);
+  ctx.fillRect(p.x+3, y+p.h, 3, 7+f*0.6);
 
   // بال‌ها
-  ctx.fillStyle = jetD;
-  ctx.fillRect(x-4, y+18, p.w+8, 8);
-  ctx.fillRect(x-2, y+p.h-14, p.w+4, 6);
+  ctx.fillStyle = C.jetDark;
+  ctx.fillRect(x-5, y+20, p.w+10, 9);
+  ctx.fillRect(x-3, y+p.h-16, p.w+6, 7);
 
-  // بدنه‌ی مثلثی با جزئیات
-  ctx.fillStyle = jetC;
+  // بدنه
+  ctx.fillStyle = C.jet;
   ctx.beginPath();
   ctx.moveTo(p.x, y);
   ctx.lineTo(p.x+p.w/2, y+p.h-10);
-  ctx.lineTo(p.x+p.w/2-6, y+p.h);
-  ctx.lineTo(p.x-p.w/2+6, y+p.h);
+  ctx.lineTo(p.x+p.w/2-7, y+p.h);
+  ctx.lineTo(p.x-p.w/2+7, y+p.h);
   ctx.lineTo(p.x-p.w/2, y+p.h-10);
   ctx.closePath();
   ctx.fill();
 
   // خط وسط
-  ctx.fillStyle = jetD;
-  ctx.fillRect(p.x-2, y+10, 4, p.h-18);
+  ctx.fillStyle = C.jetDark;
+  ctx.fillRect(p.x-2, y+12, 4, p.h-20);
 
   // پنل‌بندی
   ctx.fillStyle = "rgba(0,0,0,0.15)";
-  ctx.fillRect(p.x-p.w/2+8, y+20, 4, 10);
-  ctx.fillRect(p.x+p.w/2-12, y+20, 4, 10);
+  ctx.fillRect(p.x-p.w/2+10, y+22, 4, 12);
+  ctx.fillRect(p.x+p.w/2-14, y+22, 4, 12);
 
   // کابین
-  ctx.fillStyle = cockpitC;
-  ctx.fillRect(p.x-7, y+10, 14, 10);
-  ctx.fillStyle = "rgba(255,255,255,0.4)";
-  ctx.fillRect(p.x-5, y+11, 5, 4);
+  ctx.fillStyle = C.cockpit;
+  ctx.fillRect(p.x-8, y+10, 16, 12);
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  ctx.fillRect(p.x-6, y+12, 6, 4);
 
   // دم
-  ctx.fillStyle = jetA;
-  ctx.fillRect(p.x-4, y-4, 8, 8);
+  ctx.fillStyle = C.jetAccent;
+  ctx.fillRect(p.x-5, y-4, 10, 9);
   ctx.fillStyle = "#fff";
-  ctx.fillRect(p.x-1, y-2, 2, 4);
+  ctx.fillRect(p.x-1, y-2, 2, 5);
 
-  // شماره‌ی بازیکن
-  ctx.fillStyle = "#000";
-  ctx.font = "bold 11px monospace";
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText(isP2 ? "2" : "1", p.x, y+p.h-8);
-
-  // سپر
-  if (game.shield > 0 && p.color === 1) {
+  if (game.shield > 0) {
     ctx.save();
     ctx.globalAlpha = 0.55 + Math.sin(performance.now()/80)*0.2;
     ctx.strokeStyle = "#4ac8f2"; ctx.lineWidth = 2;
@@ -1772,7 +1765,6 @@ function drawPlayerBy(p) {
     ctx.restore();
   }
 
-  // چشمک invuln
   if (p.invuln > 0 && Math.floor(performance.now()/100)%2 === 0) {
     ctx.save(); ctx.globalAlpha = 0.4;
     ctx.fillStyle = "#fff";
@@ -1797,6 +1789,21 @@ function drawParticles() {
   ctx.globalAlpha = 1;
 }
 
+function drawFloaters() {
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (const f of game.floaters) {
+    const a = f.life / f.maxLife;
+    ctx.globalAlpha = a;
+    ctx.font = "bold 16px monospace";
+    ctx.fillStyle = "#000";
+    ctx.fillText(f.text, f.x+1, f.y+1);
+    ctx.fillStyle = f.color;
+    ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+}
+
 /* ============================================================
    LOOP
 ============================================================ */
@@ -1810,10 +1817,26 @@ function loop(t) {
 }
 
 /* ============================================================
-   UI
+   UI - TABS & BINDINGS
 ============================================================ */
+function switchTab(name) {
+  document.querySelectorAll(".tabs button").forEach(b => {
+    b.classList.toggle("active", b.dataset.tab === name);
+  });
+  document.querySelectorAll(".tabContent").forEach(c => c.classList.add("hidden"));
+  const el = document.getElementById("tab-" + name);
+  if (el) el.classList.remove("hidden");
+  if (name === "shop") renderShop();
+  if (name === "achv") renderAchievements();
+  if (name === "wallet") renderWallet();
+}
+document.querySelectorAll(".tabs button").forEach(b => {
+  b.addEventListener("click", () => switchTab(b.dataset.tab));
+});
+
 function setupSeg(id, key, onChange) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.querySelectorAll("button").forEach(b => {
     b.addEventListener("click", () => {
       el.querySelectorAll("button").forEach(x => x.classList.remove("active"));
@@ -1829,79 +1852,194 @@ function setupSeg(id, key, onChange) {
 }
 
 setupSeg("segMode", "mode");
+setupSeg("segTheme", "theme", (v) => {
+  if (!player.unlockedThemes.includes(v)) {
+    // برگردون به تم قبلی
+    settings.theme = store.get("theme", "atari");
+    const el = document.getElementById("segTheme");
+    el.querySelectorAll("button").forEach(x => x.classList.toggle("active", x.dataset.v === settings.theme));
+    toast("این تم قفله! از فروشگاه بخر", 1.5);
+  }
+});
 setupSeg("segControl", "control", () => updateTouchControlsVisibility());
 setupSeg("segFire", "fire");
 setupSeg("segDiff", "difficulty");
 setupSeg("segSound", "sound", v => { if (v === "on") initAudio(); });
-setupSeg("segLanMode", "lanMode");
+setupSeg("segMusic", "music", v => {
+  if (v === "on") { initAudio(); if (game.running) startMusic(); }
+  else stopMusic();
+});
 
-document.getElementById("startBtn").addEventListener("click", () => {
-  const m = settings.mode === "infinite" ? "single" : settings.mode;
-  startGame(m);
-  if (settings.mode === "infinite") {
-    game.mode = "infinite";
+document.getElementById("startBtn").addEventListener("click", startGame);
+document.getElementById("retryBtn").addEventListener("click", startGame);
+document.getElementById("menuBtn").addEventListener("click", backToMenu);
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (confirm("همه‌ی داده‌ها پاک بشن؟ مطمئنی؟")) {
+    localStorage.clear();
+    location.reload();
   }
 });
-document.getElementById("lanBtn").addEventListener("click", () => {
-  document.getElementById("menu").classList.add("hidden");
-  document.getElementById("lanMenu").classList.remove("hidden");
-});
-document.getElementById("lanBackBtn").addEventListener("click", () => {
-  document.getElementById("lanMenu").classList.add("hidden");
-  document.getElementById("menu").classList.remove("hidden");
-});
-document.getElementById("hostBtn").addEventListener("click", startHost);
-document.getElementById("joinBtn").addEventListener("click", () => {
-  document.getElementById("lanMenu").classList.add("hidden");
-  document.getElementById("joinMenu").classList.remove("hidden");
-});
-document.getElementById("joinGoBtn").addEventListener("click", startJoin);
-document.getElementById("joinBackBtn").addEventListener("click", () => {
-  document.getElementById("joinMenu").classList.add("hidden");
-  document.getElementById("lanMenu").classList.remove("hidden");
-});
-document.getElementById("hostCancelBtn").addEventListener("click", () => {
-  if (net.peer) { try { net.peer.destroy(); } catch(e){} net.peer = null; }
-  net.connected = false; net.isHost = false;
-  document.getElementById("hostLobby").classList.add("hidden");
-  document.getElementById("lanMenu").classList.remove("hidden");
-});
-document.getElementById("retryBtn").addEventListener("click", () => startGame(game.mode));
-document.getElementById("menuBtn").addEventListener("click", backToMenu);
 
-// چت سریع
-document.querySelectorAll("#chatBox button").forEach(b => {
-  b.addEventListener("click", () => {
-    const e = b.dataset.e;
-    showChat(e);
-    if (net.connected && net.conn) {
-      try { net.conn.send({ t:"chat", e }); } catch(err){}
-    }
+/* ============================================================
+   SHOP
+============================================================ */
+const SHOP_ITEMS = [
+  { id:"fuelTank", name:"⛽ باک بزرگ‌تر", desc:"+20% ظرفیت سوخت", cost:150, max:3, type:"upgrade" },
+  { id:"speed", name:"🚀 سرعت بیشتر", desc:"+15% سرعت حرکت", cost:200, max:3, type:"upgrade" },
+  { id:"shieldStart", name:"🛡 شروع با سپر", desc:"هر بازی با سپر شروع کن", cost:300, max:1, type:"upgrade" },
+  { id:"extraLife", name:"❤️ جان اضافه", desc:"+1 جان در شروع بازی", cost:500, max:3, type:"upgrade" },
+  { id:"theme_neon", name:"🎨 تم نئون", desc:"رنگ‌های درخشان", cost:150, max:1, type:"theme", theme:"neon" },
+  { id:"theme_sunset", name:"🌅 تم غروب", desc:"نارنجی و بنفش", cost:200, max:1, type:"theme", theme:"sunset" },
+  { id:"theme_polar", name:"❄ تم قطبی", desc:"سفید و آبی", cost:250, max:1, type:"theme", theme:"polar" },
+  { id:"skin_red", name:"🔴 اسکین قرمز", desc:"هواپیمای قرمز", cost:100, max:1, type:"skin", skin:"red" },
+  { id:"skin_neon", name:"💚 اسکین نئون", desc:"هواپیمای نئونی", cost:200, max:1, type:"skin", skin:"neon" },
+  { id:"skin_gold", name:"🏆 اسکین طلایی", desc:"هواپیمای طلا", cost:300, max:1, type:"skin", skin:"gold" }
+];
+
+function renderShop() {
+  document.getElementById("shopCoins").textContent = player.coins;
+  const holder = document.getElementById("shopItems");
+  holder.innerHTML = "";
+  SHOP_ITEMS.forEach(item => {
+    let owned = false;
+    if (item.type === "upgrade") owned = (player.upgrades[item.id] || 0) >= item.max;
+    if (item.type === "theme") owned = player.unlockedThemes.includes(item.theme);
+    if (item.type === "skin") owned = player.unlockedSkins.includes(item.skin);
+    const div = document.createElement("div");
+    div.className = "opt";
+    let curText = "";
+    if (item.type === "upgrade") curText = `<span style="color:#f2d34a;">${player.upgrades[item.id]||0}/${item.max}</span>`;
+    div.innerHTML = `
+      <label style="text-align:right;">
+        <div style="color:#f2d34a;">${item.name}</div>
+        <div style="font-size:10px; color:#9fbf7f;">${item.desc}</div>
+      </label>
+      <div class="seg">
+        ${curText}
+        <button data-id="${item.id}" ${owned ? "disabled" : ""} style="${owned?"opacity:0.4;":""}">
+          ${owned ? "✓" : "🪙 " + item.cost}
+        </button>
+      </div>`;
+    holder.appendChild(div);
   });
-});
-
-// QR خواندن از URL (اگه کاربر با دوربین اسکن کرد و لینک باز شد)
-const urlParams = new URLSearchParams(location.search);
-const joinParam = urlParams.get("join");
-if (joinParam) {
-  setTimeout(() => {
-    document.getElementById("menu").classList.add("hidden");
-    document.getElementById("joinMenu").classList.remove("hidden");
-    document.getElementById("joinCode").value = joinParam;
-    startJoin();
-  }, 300);
+  holder.querySelectorAll("button").forEach(b => {
+    b.addEventListener("click", () => {
+      const item = SHOP_ITEMS.find(x => x.id === b.dataset.id);
+      if (!item) return;
+      if (player.coins < item.cost) { toast("سکه کافی نیست", 1.2); return; }
+      player.coins -= item.cost;
+      if (item.type === "upgrade") {
+        player.upgrades[item.id] = (player.upgrades[item.id] || 0) + 1;
+      } else if (item.type === "theme") {
+        if (!player.unlockedThemes.includes(item.theme)) player.unlockedThemes.push(item.theme);
+        settings.theme = item.theme; store.set("theme", item.theme);
+      } else if (item.type === "skin") {
+        if (!player.unlockedSkins.includes(item.skin)) player.unlockedSkins.push(item.skin);
+        player.currentSkin = item.skin; store.set("currentSkin", item.skin);
+      }
+      addCoins(0, "خرید: " + item.name);
+      sfx("coin");
+      savePlayer();
+      renderShop();
+      updateCoinDisplays();
+      toast("خریداری شد!", 1);
+      // آپدیت تم‌ها در تنظیمات
+      document.querySelectorAll("#segTheme button").forEach(x => x.classList.toggle("active", x.dataset.v === settings.theme));
+    });
+  });
 }
 
-// لیدربورد
+/* ============================================================
+   ACHIEVEMENTS RENDER
+============================================================ */
+function renderAchievements() {
+  const holder = document.getElementById("achvList");
+  if (!holder) return;
+  holder.innerHTML = "";
+  let unlocked = 0;
+  ACHV.forEach(a => {
+    const isUnlocked = !!player.achievements[a.id];
+    if (isUnlocked) unlocked++;
+    const div = document.createElement("div");
+    div.className = "achv" + (isUnlocked ? "" : " locked");
+    div.innerHTML = `
+      <div class="icon">${isUnlocked ? a.icon : "🔒"}</div>
+      <div class="info">
+        <div class="name">${a.name}</div>
+        <div class="desc">${a.desc}</div>
+      </div>
+      <div style="color:${isUnlocked?"#8fd44a":"#7a9a5f"}; font-size:11px;">${isUnlocked?"✓":"—"}</div>
+    `;
+    holder.appendChild(div);
+  });
+  document.getElementById("achvCount").textContent = unlocked;
+}
+
+/* ============================================================
+   WALLET
+============================================================ */
+function renderWallet() {
+  document.getElementById("walletCoins").textContent = player.coins;
+  document.getElementById("walletAddr").value = player.wallet || "";
+  const hist = document.getElementById("coinHistory");
+  if (!player.coinHistory.length) { hist.textContent = "—"; return; }
+  hist.innerHTML = player.coinHistory.slice(0, 15).map(h => {
+    const d = new Date(h.t);
+    const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`;
+    return `<div>${h.n >= 0 ? "+" : ""}${h.n} 🪙 — ${h.reason} (${time})</div>`;
+  }).join("");
+}
+document.getElementById("saveWalletBtn").addEventListener("click", () => {
+  const v = document.getElementById("walletAddr").value.trim();
+  if (v.length < 10) { toast("آدرس معتبر نیست", 1.2); return; }
+  player.wallet = v;
+  savePlayer();
+  checkAchievements();
+  toast("آدرس ذخیره شد ✓", 1.2);
+});
+
+/* ============================================================
+   DAILY REWARD
+============================================================ */
+function checkDaily() {
+  const now = Date.now();
+  const last = player.daily.lastClaim || 0;
+  const diff = now - last;
+  const day = 24 * 60 * 60 * 1000;
+  if (diff >= day) {
+    // پیاپی؟
+    if (diff < day * 2) player.daily.streak = (player.daily.streak || 0) + 1;
+    else player.daily.streak = 1;
+    const amount = 50 + Math.min(player.daily.streak - 1, 6) * 10;
+    document.getElementById("dailyDay").textContent = player.daily.streak;
+    document.getElementById("dailyAmount").textContent = amount;
+    document.getElementById("daily").classList.remove("hidden");
+    document.getElementById("claimBtn").onclick = () => {
+      addCoins(amount, "جایزه‌ی روزانه");
+      sfx("coin");
+      player.daily.lastClaim = now;
+      savePlayer();
+      checkAchievements();
+      document.getElementById("daily").classList.add("hidden");
+    };
+  }
+}
+
+/* ============================================================
+   LEADERBOARD
+============================================================ */
 function renderLeaderboard() {
   const el = document.getElementById("leaderboard");
-  if (!leaderboard.length) { el.textContent = "—"; return; }
-  el.innerHTML = leaderboard.slice(0,5).map((r,i) =>
+  if (!el) return;
+  if (!player.leaderboard.length) { el.textContent = "—"; return; }
+  el.innerHTML = "<b>رکوردهای برتر:</b><br>" + player.leaderboard.slice(0,5).map((r,i) =>
     `${i+1}. ${r.score} (مرحله ${r.level})`
   ).join("<br>");
 }
 
-// Wake Lock
+/* ============================================================
+   WAKE LOCK
+============================================================ */
 let wakeLock = null;
 async function requestWakeLock() {
   try { if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); } catch(e){}
@@ -1911,7 +2049,9 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden" && game.running && !game.paused) togglePause();
 });
 
-// Service Worker
+/* ============================================================
+   SERVICE WORKER
+============================================================ */
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
@@ -1920,8 +2060,13 @@ if ("serviceWorker" in navigator) {
    INIT
 ============================================================ */
 resize();
-document.getElementById("bestMenu").textContent = bestScore;
+document.getElementById("bestMenu").textContent = player.best;
+document.querySelectorAll("#segTheme button").forEach(x => {
+  x.classList.toggle("active", x.dataset.v === settings.theme);
+});
 renderLeaderboard();
+updateCoinDisplays();
+checkDaily();
 requestAnimationFrame(loop);
 
 })();
